@@ -1537,15 +1537,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _openUpdateLink(ReleaseInfo? releaseInfo) async {
     if (releaseInfo == null) return;
     
-    // Google Drive 링크 (현재 APK 다운로드 링크)
-    const googleDriveUrl = 'https://drive.google.com/file/d/1gIqrBNjG0m2V41c9kDkH_lV6QQeo1pkN/view?usp=sharing';
+    // 릴리즈 정보에서 다운로드 링크 가져오기
+    String? downloadUrl = releaseInfo.downloadUrl;
+    
+    // 다운로드 링크가 없으면 기본 Google Drive 링크 사용
+    if (downloadUrl == null || downloadUrl.isEmpty) {
+      downloadUrl = 'https://drive.google.com/file/d/1EPQrTSrcoLikGnLKUEk76Pfr1YWTS4YO/view?usp=drive_link';
+    }
     
     try {
-      final Uri url = Uri.parse(googleDriveUrl);
+      final Uri url = Uri.parse(downloadUrl);
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
-        print('URL을 열 수 없습니다: $googleDriveUrl');
+        print('URL을 열 수 없습니다: $downloadUrl');
+        // 대안: 시스템 브라우저로 열기 시도
+        try {
+          await launchUrl(url, mode: LaunchMode.platformDefault);
+        } catch (e2) {
+          print('대안 방법으로도 URL 열기 실패: $e2');
+        }
       }
     } catch (e) {
       print('URL 열기 오류: $e');

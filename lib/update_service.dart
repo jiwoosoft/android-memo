@@ -135,9 +135,19 @@ class ReleaseInfo {
   });
 
   factory ReleaseInfo.fromJson(Map<String, dynamic> json) {
-    // APK 다운로드 URL 찾기
+    // Google Drive 다운로드 URL 찾기 (릴리즈 노트에서 추출)
     String? apkUrl;
-    if (json['assets'] != null && json['assets'] is List) {
+    final body = json['body'] ?? '';
+    
+    // 릴리즈 노트에서 Google Drive 링크 추출
+    final googleDrivePattern = RegExp(r'https://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)/[^)\s]*');
+    final match = googleDrivePattern.firstMatch(body);
+    if (match != null) {
+      apkUrl = match.group(0);
+    }
+    
+    // GitHub assets에서도 확인 (백업)
+    if (apkUrl == null && json['assets'] != null && json['assets'] is List) {
       final assets = json['assets'] as List;
       for (var asset in assets) {
         if (asset['name'] != null && asset['name'].toString().endsWith('.apk')) {
