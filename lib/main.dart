@@ -350,7 +350,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                 if (_isConfirming)
                   TextButton(
                     onPressed: () {
-                      setState(() {
+      setState(() {
                         _isConfirming = false;
                         _pinController.clear();
                         _confirmPinController.clear();
@@ -402,11 +402,11 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[850],
+          backgroundColor: Colors.grey[850],
         title: Text('오류', style: TextStyle(color: Colors.white)),
         content: Text(message, style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
+          actions: [
+            TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('확인', style: TextStyle(color: Colors.teal)),
           ),
@@ -626,9 +626,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     return ListView.builder(
       padding: EdgeInsets.all(16),
       itemCount: categories.length,
-      itemBuilder: (context, index) {
+        itemBuilder: (context, index) {
         final category = categories[index];
-        return Card(
+          return Card(
           margin: EdgeInsets.only(bottom: 12),
           child: ExpandablePanel(
             header: ListTile(
@@ -704,7 +704,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         return Card(
           key: ValueKey(category.id),
           margin: EdgeInsets.only(bottom: 12),
-          child: ListTile(
+            child: ListTile(
             leading: Icon(
               _getIconData(category.icon),
               color: Colors.teal,
@@ -724,9 +724,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
               Icons.drag_handle,
               color: Colors.white70,
             ),
-          ),
-        );
-      },
+            ),
+          );
+        },
     );
   }
 
@@ -753,12 +753,6 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
           title: Text(
             memo.title.isEmpty ? '제목 없음' : memo.title,
             style: TextStyle(color: Colors.white),
-          ),
-          subtitle: Text(
-            memo.content.length > 50
-                ? '${memo.content.substring(0, 50)}...'
-                : memo.content,
-            style: TextStyle(color: Colors.white70),
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -884,14 +878,14 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
   void _addMemo(Category category) async {
     final result = await Navigator.push(
-      context,
+            context,
       MaterialPageRoute(
         builder: (context) => AddMemoScreen(category: category),
       ),
-    );
+          );
     
     if (result != null) {
-      setState(() {
+            setState(() {
         category.memos.add(result);
       });
       _saveCategories();
@@ -1056,6 +1050,7 @@ class _AddMemoScreenState extends State<AddMemoScreen> {
                 controller: _contentController,
                 maxLines: null,
                 expands: true,
+                textAlignVertical: TextAlignVertical.top,
                 style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: '내용',
@@ -1195,7 +1190,7 @@ class SettingsScreen extends StatelessWidget {
             child: Text('취소'),
           ),
           TextButton(
-            onPressed: () {
+              onPressed: () {
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => LoginScreen()),
                 (Route<dynamic> route) => false,
@@ -1446,15 +1441,11 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
           Text('아이콘 선택', style: TextStyle(color: Colors.white)),
           SizedBox(height: 8),
           Container(
-            height: 120,
-            child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 5,
-                childAspectRatio: 1,
-              ),
-              itemCount: _icons.length,
-              itemBuilder: (context, index) {
-                final iconData = _icons[index];
+            width: double.maxFinite,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _icons.map((iconData) {
                 final isSelected = _selectedIcon == iconData['name'];
                 return GestureDetector(
                   onTap: () {
@@ -1463,7 +1454,8 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
                     });
                   },
                   child: Container(
-                    margin: EdgeInsets.all(4),
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: isSelected ? Colors.teal : Colors.grey[700]!,
@@ -1474,14 +1466,15 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
                     child: Icon(
                       iconData['icon'],
                       color: isSelected ? Colors.teal : Colors.white70,
+                      size: 24,
                     ),
                   ),
                 );
-              },
+              }).toList(),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
@@ -1561,15 +1554,11 @@ class _EditCategoryDialogState extends State<EditCategoryDialog> {
           Text('아이콘 선택', style: TextStyle(color: Colors.white)),
           SizedBox(height: 8),
           Container(
-            height: 120,
-            child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 5,
-                childAspectRatio: 1,
-              ),
-              itemCount: _icons.length,
-              itemBuilder: (context, index) {
-                final iconData = _icons[index];
+            width: double.maxFinite,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _icons.map((iconData) {
                 final isSelected = _selectedIcon == iconData['name'];
                 return GestureDetector(
                   onTap: () {
@@ -1578,7 +1567,8 @@ class _EditCategoryDialogState extends State<EditCategoryDialog> {
                     });
                   },
                   child: Container(
-                    margin: EdgeInsets.all(4),
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: isSelected ? Colors.teal : Colors.grey[700]!,
@@ -1589,10 +1579,11 @@ class _EditCategoryDialogState extends State<EditCategoryDialog> {
                     child: Icon(
                       iconData['icon'],
                       color: isSelected ? Colors.teal : Colors.white70,
+                      size: 24,
                     ),
                   ),
                 );
-              },
+              }).toList(),
             ),
           ),
         ],

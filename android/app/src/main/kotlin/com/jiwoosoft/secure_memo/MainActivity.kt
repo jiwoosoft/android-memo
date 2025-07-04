@@ -1,4 +1,4 @@
-package com.example.memo_app
+package com.jiwoosoft.secure_memo
 
 import io.flutter.embedding.android.FlutterActivity
 
