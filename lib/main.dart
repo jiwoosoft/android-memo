@@ -6,6 +6,8 @@ import 'package:pinput/pinput.dart';
 import 'package:expandable/expandable.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'security_service.dart';
+import 'update_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(MyApp());
@@ -1316,12 +1318,238 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         actions: [
           TextButton(
+            onPressed: () => _checkForUpdates(context),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.system_update, color: Colors.teal, size: 18),
+                SizedBox(width: 4),
+                Text('업데이트 확인', style: TextStyle(color: Colors.teal)),
+              ],
+            ),
+          ),
+          TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('확인', style: TextStyle(color: Colors.teal)),
           ),
         ],
       ),
     );
+  }
+
+  /// 업데이트 확인 메서드
+  void _checkForUpdates(BuildContext context) async {
+    // 로딩 다이얼로그 표시
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Colors.teal),
+            SizedBox(height: 16),
+            Text(
+              '업데이트 확인 중...',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // 업데이트 확인 실행
+      final result = await UpdateService.checkForUpdate();
+      
+      // 로딩 다이얼로그 닫기
+      Navigator.pop(context);
+
+      if (result.errorMessage != null) {
+        // 에러 발생 시
+        _showUpdateErrorDialog(context, result.errorMessage!);
+      } else if (result.hasUpdate) {
+        // 업데이트가 있는 경우
+        _showUpdateAvailableDialog(context, result);
+      } else {
+        // 최신 버전인 경우
+        _showNoUpdateDialog(context, result);
+      }
+    } catch (e) {
+      // 로딩 다이얼로그 닫기
+      Navigator.pop(context);
+      _showUpdateErrorDialog(context, '업데이트 확인 중 오류가 발생했습니다.');
+    }
+  }
+
+  /// 업데이트 사용 가능 다이얼로그
+  void _showUpdateAvailableDialog(BuildContext context, UpdateCheckResult result) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: Row(
+          children: [
+            Icon(Icons.system_update, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('업데이트 사용 가능', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '새로운 버전이 출시되었습니다!',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
+            Text('현재 버전: v${result.currentVersion} (${result.currentBuildNumber})', 
+                 style: TextStyle(color: Colors.white70)),
+            Text('최신 버전: ${result.latestVersion} (${result.latestBuildNumber})', 
+                 style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+            SizedBox(height: 12),
+            if (result.releaseInfo != null) ...[
+              Text('📋 릴리즈 노트:', style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+              SizedBox(height: 4),
+              Container(
+                height: 100,
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[800],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    result.releaseInfo!.body.isNotEmpty 
+                      ? result.releaseInfo!.body 
+                      : '릴리즈 노트가 없습니다.',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('나중에', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _openUpdateLink(result.releaseInfo);
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.download, color: Colors.teal, size: 18),
+                SizedBox(width: 4),
+                Text('다운로드', style: TextStyle(color: Colors.teal)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 최신 버전 다이얼로그
+  void _showNoUpdateDialog(BuildContext context, UpdateCheckResult result) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 8),
+            Text('최신 버전', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '현재 최신 버전을 사용하고 있습니다.',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
+            Text('현재 버전: v${result.currentVersion} (${result.currentBuildNumber})', 
+                 style: TextStyle(color: Colors.teal)),
+            if (result.latestVersion != null)
+              Text('최신 버전: ${result.latestVersion} (${result.latestBuildNumber})', 
+                   style: TextStyle(color: Colors.white70)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('확인', style: TextStyle(color: Colors.teal)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 업데이트 확인 오류 다이얼로그
+  void _showUpdateErrorDialog(BuildContext context, String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: Row(
+          children: [
+            Icon(Icons.error, color: Colors.red),
+            SizedBox(width: 8),
+            Text('업데이트 확인 실패', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              errorMessage,
+              style: TextStyle(color: Colors.white70),
+            ),
+            SizedBox(height: 12),
+            Text(
+              '인터넷 연결을 확인하고 다시 시도해주세요.',
+              style: TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('확인', style: TextStyle(color: Colors.teal)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 업데이트 링크 열기
+  void _openUpdateLink(ReleaseInfo? releaseInfo) async {
+    if (releaseInfo == null) return;
+    
+    // Google Drive 링크 (현재 APK 다운로드 링크)
+    const googleDriveUrl = 'https://drive.google.com/file/d/1gIqrBNjG0m2V41c9kDkH_lV6QQeo1pkN/view?usp=sharing';
+    
+    try {
+      final Uri url = Uri.parse(googleDriveUrl);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        print('URL을 열 수 없습니다: $googleDriveUrl');
+      }
+    } catch (e) {
+      print('URL 열기 오류: $e');
+    }
   }
 
   void _logout(BuildContext context) {

@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     android:installLocation="internalOnly">
     
+    <!-- 인터넷 권한 (업데이트 확인용) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    
     <!-- 듀얼 메신저 기능 완전 비활성화 -->
     <uses-feature
         android:name="com.samsung.feature.dualfolderdisplay"
