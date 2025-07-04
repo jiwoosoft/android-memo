@@ -2,10 +2,10 @@
 
 ## 📲 APK 다운로드
 
-### 🚀 최신 버전 (v1.0.3)
-**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1mhWt18-HroWuosSMxzNDyNYdTcSjNBjQ/view?usp=drivesdk)** | **[📋 릴리즈 노트](https://github.com/jiwoosoft/android-memo/releases)**
+### 🚀 최신 버전 (v1.0.4)
+**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1jS2Du3gGDMSvQAhkubtjf3fwyB3z8Fhg/view?usp=drivesdk)** | **[📋 릴리즈 노트](https://github.com/jiwoosoft/android-memo/releases)**
 
-- **파일 크기**: 58.8MB
+- **파일 크기**: 59.2MB
 - **Android 요구사항**: 5.0+ (API 21+)
 - **패키지명**: `com.jiwoosoft.secure_memo`
 - **최종 업데이트**: 2025.07.04
@@ -218,6 +218,14 @@ cardColor: Colors.grey[900]     // 카드 배경
 
 ## 🔄 업데이트 로그
 
+### v1.0.4 (2025-01-05)
+- 🔍 메모 검색 기능 추가 (실시간 검색, 카테고리/제목/내용 검색)
+- 📊 메모 정렬 옵션 추가 (생성일/수정일/제목/내용순, 오름차순/내림차순)
+- 🌙 다크/라이트 테마 선택 기능 (시스템 설정 따름/라이트/다크)
+- 📝 폰트 크기 조정 기능 (작게/보통/크게/매우 크게)
+- 🚀 자동 배포 시스템 구축 (Google Drive 자동 업로드)
+- ⚡ 사용자 경험 개선 및 접근성 향상
+
 ### v1.0.3 (2024-12-23)
 - 🔧 갤럭시폰 듀얼 메신저 기능 완전 비활성화
 - 🎯 AndroidManifest.xml 특화 설정으로 중복 설치 방지
@@ -254,17 +262,17 @@ cardColor: Colors.grey[900]     // 카드 배경
 
 ## 🚀 향후 계획
 
-### v1.0.4 (계획)
-- [ ] 메모 검색 기능 추가
-- [ ] 메모 정렬 옵션 (날짜, 제목, 내용)
-- [ ] 다크/라이트 테마 선택
-- [ ] 폰트 크기 조정 기능
-
-### v1.0.5 (계획)
+### v1.0.5 (개발 중)
 - [ ] 메모 태그 기능
 - [ ] 백업/복원 기능 (파일 export/import)
 - [ ] 지문 인증 지원
 - [ ] 메모 내 이미지 첨부 기능
+
+### v1.0.6 (계획)
+- [ ] 메모 즐겨찾기 기능
+- [ ] 메모 자동 저장 기능
+- [ ] 메모 공유 기능
+- [ ] 위젯 지원
 
 ## 📄 라이선스
 
