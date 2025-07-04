@@ -1,23 +1,37 @@
-# 📝 Android 메모장 앱 (Memo App)
+# 🔐 안전한 메모장 앱 (Secure Memo App)
 
 ## 📋 프로젝트 소개
 
-Flutter로 개발된 다크모드 지원 메모장 앱입니다. 간단하고 직관적인 UI로 메모를 작성, 저장, 삭제할 수 있는 기능을 제공합니다.
+Flutter로 개발된 PIN 기반 보안 메모장 앱입니다. 4자리 PIN으로 앱을 보호하고, 카테고리별로 메모를 분류하여 체계적으로 관리할 수 있습니다.
 
 ## ✨ 주요 기능
 
-### 🌟 핵심 기능
-- **메모 작성**: 텍스트 입력을 통한 메모 작성
-- **메모 목록 보기**: 작성된 모든 메모를 리스트 형태로 확인
-- **메모 삭제**: 길게 누르기로 메모 삭제 (확인 다이얼로그 포함)
-- **데이터 저장**: SharedPreferences를 통한 로컬 데이터 저장
-- **다크모드**: 눈에 편한 다크 테마 적용
+### 🔒 보안 기능
+- **PIN 로그인 시스템**: 4자리 숫자로 간편하면서도 안전한 인증
+- **최초 설정**: 앱 설치 후 최초 실행 시 PIN 생성 가이드
+- **PIN 변경**: 설정에서 언제든지 PIN 변경 가능
+- **암호화 저장**: SHA-256 해시로 PIN 암호화 저장
+- **자동 로그아웃**: 앱 재시작 시 자동 로그인 화면 표시
 
-### 🎨 UI/UX 특징
-- **Material Design 3**: 최신 머티리얼 디자인 적용
-- **다크 테마**: 블랙 배경과 틸(Teal) 포인트 컬러
-- **직관적인 네비게이션**: 플로팅 액션 버튼으로 메모 추가
-- **사용자 친화적 인터페이스**: 간단하고 깔끔한 디자인
+### 📂 카테고리 시스템
+- **그룹화된 메모 관리**: 카테고리별 메모 분류
+- **기본 카테고리 제공**: 거래처, 구매처, 개인메모
+- **사용자 정의 카테고리**: 새로운 카테고리 자유롭게 추가
+- **아이콘 선택**: 10가지 아이콘으로 카테고리 구분
+- **확장 가능한 리스트**: 카테고리를 펼쳐서 메모 목록 확인
+
+### 📝 메모 기능
+- **메모 작성**: 제목과 내용으로 구성된 메모 작성
+- **메모 수정**: 기존 메모 수정 및 업데이트
+- **메모 삭제**: 확인 다이얼로그와 함께 안전한 삭제
+- **메모 상세 보기**: 작성일, 수정일 포함한 상세 정보
+- **실시간 저장**: SharedPreferences를 통한 즉시 저장
+
+### 🎨 사용자 인터페이스
+- **다크 테마**: 눈에 편한 어두운 테마 적용
+- **Material Design 3**: 최신 머티리얼 디자인 가이드라인 준수
+- **직관적인 네비게이션**: 스플래시 → 로그인 → 메인 화면
+- **반응형 디자인**: 다양한 화면 크기에 최적화
 
 ## 🛠️ 기술 스택
 
@@ -27,197 +41,242 @@ Flutter로 개발된 다크모드 지원 메모장 앱입니다. 간단하고 �
 
 ### 주요 라이브러리
 - **shared_preferences**: ^2.2.2 (로컬 데이터 저장)
-- **material_design**: Material Design 3 컴포넌트
+- **crypto**: ^3.0.3 (PIN 암호화)
+- **pinput**: ^4.0.0 (PIN 입력 UI)
+- **expandable**: ^5.0.1 (확장 가능한 리스트)
 - **cupertino_icons**: ^1.0.8 (iOS 스타일 아이콘)
 
-### 개발 도구
-- **Flutter SDK**: 최신 안정 버전
-- **Android Studio / VS Code**: 개발 환경
-- **Gradle**: Android 빌드 시스템
+## 📱 앱 구조
 
-## 📱 스크린샷
-
-### 메인 화면 (메모 리스트)
-- 작성된 메모들이 카드 형태로 표시
-- 틸 컬러 노트 아이콘으로 시각적 구분
-- 상단 앱바에 앱 제목 표시
-
-### 메모 작성 화면
-- 다중 줄 텍스트 입력 필드
-- 저장 버튼 (아이콘 + 텍스트)
-- 다크 테마 적용된 입력 필드
-
-### 삭제 확인 다이얼로그
-- 메모 삭제 전 확인 과정
-- 취소/삭제 버튼 제공
+```
+안전한 메모장
+│
+├── 🚀 스플래시 화면
+│   ├── 앱 로고 및 로딩
+│   └── 최초 실행 여부 확인
+│
+├── 🔐 인증 시스템
+│   ├── PIN 설정 화면 (최초 실행)
+│   ├── PIN 로그인 화면
+│   └── PIN 변경 화면
+│
+├── 📁 메인 화면 (카테고리 목록)
+│   ├── 카테고리별 메모 그룹화
+│   ├── 확장 가능한 메모 리스트
+│   └── 카테고리 추가 기능
+│
+├── 📝 메모 관리
+│   ├── 메모 작성/수정 화면
+│   ├── 메모 상세 보기
+│   └── 메모 삭제 기능
+│
+└── ⚙️ 설정 화면
+    ├── PIN 변경
+    ├── 앱 정보
+    └── 로그아웃
+```
 
 ## 🚀 설치 및 실행
 
-### 사전 요구사항
-- Flutter SDK 3.8.1 이상
-- Android Studio 또는 VS Code
-- Android SDK (안드로이드 앱 빌드용)
+### 개발 환경 설정
+1. Flutter SDK 설치 (4.0 이상)
+2. Android Studio 또는 VS Code 설치
+3. Android SDK 설치
 
-### 1. 프로젝트 클론
+### 프로젝트 실행
 ```bash
+# 프로젝트 클론
 git clone https://github.com/jiwoosoft/android-memo.git
+
+# 디렉토리 이동
 cd android-memo
-```
 
-### 2. 의존성 설치
-```bash
+# 의존성 설치
 flutter pub get
-```
 
-### 3. 앱 실행
-```bash
-# 디버그 모드로 실행
+# 앱 실행 (디버그 모드)
 flutter run
 
-# 또는 특정 디바이스에서 실행
-flutter run -d <device_id>
-```
-
-### 4. APK 빌드
-```bash
-# 릴리즈 APK 생성
+# APK 빌드 (릴리즈 모드)
 flutter build apk --release
-
-# 분할 APK 생성 (파일 크기 최적화)
-flutter build apk --split-per-abi
 ```
 
-## 📁 프로젝트 구조
+## 📊 데이터 구조
 
-```
-memo_app/
-├── lib/
-│   └── main.dart                 # 메인 애플리케이션 코드
-├── android/                      # Android 플랫폼 코드
-│   ├── app/
-│   │   ├── build.gradle.kts      # Android 빌드 설정
-│   │   └── src/main/
-│   │       ├── AndroidManifest.xml
-│   │       └── kotlin/
-│   └── gradle/                   # Gradle 설정
-├── build/                        # 빌드 산출물
-│   └── app/outputs/flutter-apk/
-│       └── app-release.apk      # 배포용 APK
-├── pubspec.yaml                  # Flutter 의존성 설정
-├── pubspec.lock                  # 의존성 버전 잠금
-└── README.md                     # 프로젝트 문서
-```
-
-## 🏗️ 아키텍처
-
-### 앱 구조
-```
-MyApp (루트 위젯)
-├── MaterialApp (앱 설정)
-├── MemoListScreen (메모 리스트 화면)
-│   ├── AppBar (상단 바)
-│   ├── ListView.builder (메모 리스트)
-│   └── FloatingActionButton (메모 추가 버튼)
-└── AddMemoScreen (메모 작성 화면)
-    ├── AppBar (상단 바)
-    ├── TextField (텍스트 입력)
-    └── ElevatedButton (저장 버튼)
-```
-
-### 데이터 흐름
-1. **메모 작성**: AddMemoScreen에서 텍스트 입력 → 저장 버튼 클릭
-2. **데이터 저장**: SharedPreferences에 문자열 리스트로 저장
-3. **목록 갱신**: MemoListScreen의 상태 업데이트
-4. **메모 삭제**: 길게 누르기 → 확인 다이얼로그 → 삭제 및 저장
-
-## 🎯 사용 방법
-
-### 메모 작성하기
-1. 메인 화면에서 **+** 버튼 클릭
-2. 텍스트 입력 필드에 메모 내용 작성
-3. **저장** 버튼 클릭
-4. 메인 화면으로 돌아가 저장된 메모 확인
-
-### 메모 삭제하기
-1. 메인 화면에서 삭제할 메모를 **길게 누르기**
-2. 삭제 확인 다이얼로그에서 **삭제** 버튼 클릭
-3. 메모가 목록에서 제거됨
-
-## 📊 성능 최적화
-
-### 최적화 포인트
-- **SharedPreferences 사용**: 빠른 로컬 데이터 저장/로드
-- **ListView.builder**: 대용량 리스트 효율적 렌더링
-- **StatefulWidget**: 필요한 부분만 상태 관리
-- **Material Design**: 시스템 최적화된 UI 컴포넌트
-
-### APK 크기 최적화
-- **Tree-shaking**: 사용하지 않는 코드 제거
-- **Asset 최적화**: 아이콘 파일 최적화
-- **Proguard**: 코드 난독화 및 최적화
-
-## 🔧 커스터마이징
-
-### 색상 테마 변경
+### 카테고리 모델
 ```dart
-// lib/main.dart의 darkTheme 설정
-darkTheme: ThemeData(
-  brightness: Brightness.dark,
-  primarySwatch: Colors.blue,     // 원하는 색상으로 변경
-  scaffoldBackgroundColor: Colors.grey[900],
-  // ... 기타 테마 설정
-),
+class Category {
+  String id;           // 고유 식별자
+  String name;         // 카테고리 이름
+  String icon;         // 아이콘 타입
+  List<Memo> memos;    // 포함된 메모들
+}
 ```
 
-### 폰트 변경
-```yaml
-# pubspec.yaml
-flutter:
-  fonts:
-    - family: MyCustomFont
-      fonts:
-        - asset: fonts/MyCustomFont.ttf
+### 메모 모델
+```dart
+class Memo {
+  String id;           // 고유 식별자
+  String title;        // 메모 제목
+  String content;      // 메모 내용
+  DateTime createdAt;  // 생성일
+  DateTime updatedAt;  // 수정일
+}
 ```
 
-## 🐛 알려진 이슈
+## 🔐 보안 특징
 
-### 현재 제한사항
-- **메모 편집 기능 없음**: 한 번 작성한 메모는 수정 불가
-- **메모 검색 기능 없음**: 많은 메모에서 특정 메모 찾기 어려움
-- **카테고리 기능 없음**: 메모 분류 기능 부재
-- **백업 기능 없음**: 클라우드 동기화 미지원
+### PIN 보안
+- **해시 암호화**: SHA-256 해시로 PIN 암호화 저장
+- **메모리 보호**: PIN 입력 시 마스킹 처리
+- **로컬 저장**: PIN과 데이터 모두 로컬에만 저장
 
-### 향후 개선 계획
-- [ ] 메모 편집 기능 추가
-- [ ] 메모 검색 기능 구현
-- [ ] 카테고리/태그 시스템 도입
-- [ ] 클라우드 백업 기능 추가
-- [ ] 메모 공유 기능 구현
+### 데이터 보안
+- **오프라인 저장**: 모든 데이터 로컬 저장으로 개인정보 보호
+- **암호화 저장**: SharedPreferences를 통한 보안 저장
+- **접근 제어**: PIN 없이는 앱 접근 불가
+
+## 📚 사용 방법
+
+### 1. 최초 설정
+1. 앱 설치 후 첫 실행
+2. 4자리 PIN 설정
+3. PIN 확인 입력
+4. 설정 완료 후 메인 화면 진입
+
+### 2. 메모 작성
+1. 메인 화면에서 카테고리 선택
+2. 카테고리의 + 버튼 클릭
+3. 제목과 내용 입력
+4. 저장 버튼 클릭
+
+### 3. 카테고리 관리
+1. 메인 화면 우하단 + 버튼 클릭
+2. 카테고리 이름 입력
+3. 아이콘 선택
+4. 추가 버튼 클릭
+
+### 4. 메모 관리
+- **보기**: 메모 항목 클릭
+- **수정**: 메모 옆 메뉴 → 수정 선택
+- **삭제**: 메모 옆 메뉴 → 삭제 선택
+
+### 5. 설정 변경
+1. 메인 화면 우상단 설정 버튼
+2. PIN 변경 / 앱 정보 확인
+3. 로그아웃 시 다시 로그인 필요
+
+## 🎨 커스터마이징
+
+### 색상 테마
+```dart
+// 주요 색상
+primaryColor: Colors.teal        // 메인 컬러
+backgroundColor: Colors.black    // 배경 컬러
+cardColor: Colors.grey[900]     // 카드 배경
+```
+
+### 아이콘 추가
+```dart
+// AddCategoryDialog의 _icons 리스트에 추가
+{'name': 'new_icon', 'icon': Icons.new_icon}
+```
+
+## 📸 스크린샷
+
+### 주요 화면
+- **스플래시 화면**: 앱 로고와 로딩 표시
+- **PIN 설정**: 4자리 PIN 입력 화면
+- **메인 화면**: 카테고리별 메모 목록
+- **메모 작성**: 제목과 내용 입력 화면
+
+## 🔄 업데이트 로그
+
+### v1.0.0 (2024-01-xx)
+- ✅ PIN 기반 로그인 시스템 구현
+- ✅ 카테고리별 메모 분류 기능 추가
+- ✅ 확장 가능한 메모 리스트 구현
+- ✅ 다크 테마 및 Material Design 3 적용
+- ✅ 암호화된 로컬 데이터 저장
+- ✅ 메모 CRUD 기능 완성
+
+## 🛡️ 개인정보 보호
+
+- **로컬 저장**: 모든 데이터는 사용자 기기에만 저장
+- **네트워크 없음**: 인터넷 연결 불필요
+- **데이터 수집 없음**: 개인정보 수집하지 않음
+- **PIN 보호**: 앱 접근 시 PIN 인증 필수
+
+## 📋 알려진 제한사항
+
+- **백업 기능**: 현재 데이터 백업/복원 기능 미제공
+- **동기화**: 여러 기기 간 데이터 동기화 미지원
+- **검색 기능**: 메모 내용 검색 기능 미제공
+- **첨부파일**: 이미지, 파일 첨부 기능 미제공
+
+## 🚀 향후 계획
+
+### v1.1.0 (계획)
+- [ ] 메모 검색 기능 추가
+- [ ] 메모 내 이미지 첨부 기능
+- [ ] 백업/복원 기능 (파일 export/import)
+- [ ] 지문 인증 지원
+
+### v1.2.0 (계획)
+- [ ] 메모 태그 기능
+- [ ] 메모 정렬 옵션 (날짜, 제목, 내용)
+- [ ] 다크/라이트 테마 선택
+- [ ] 폰트 크기 조정 기능
 
 ## 📄 라이선스
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다.
+이 프로젝트는 MIT 라이선스 하에 있습니다.
+
+```
+MIT License
+
+Copyright (c) 2024 jiwoosoft
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ## 👨‍💻 개발자 정보
 
-**개발자**: jiwoosoft  
-**GitHub**: https://github.com/jiwoosoft  
-**프로젝트 저장소**: https://github.com/jiwoosoft/android-memo  
+- **개발자**: jiwoosoft
+- **이메일**: [연락처 정보]
+- **GitHub**: https://github.com/jiwoosoft
+- **프로젝트 저장소**: https://github.com/jiwoosoft/android-memo
 
 ## 🤝 기여하기
 
-1. 이 저장소를 Fork하기
-2. 새로운 기능 브랜치 생성 (`git checkout -b feature/amazing-feature`)
-3. 변경사항 커밋 (`git commit -m 'Add amazing feature'`)
-4. 브랜치에 Push (`git push origin feature/amazing-feature`)
-5. Pull Request 생성
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📞 문의 및 지원
+## 📞 지원 및 문의
 
-- **이슈 보고**: GitHub Issues 탭에서 버그 리포트
-- **기능 요청**: GitHub Issues에서 enhancement 레이블로 요청
-- **일반 문의**: GitHub Discussion 활용
+- **버그 리포트**: GitHub Issues 활용
+- **기능 제안**: GitHub Issues 활용
+- **일반 문의**: GitHub Discussions 활용
 
 ---
 
-**⭐ 이 프로젝트가 도움이 되었다면 스타를 눌러주세요!**
+**⭐ 이 프로젝트가 도움이 되었다면 별표를 눌러주세요!**
