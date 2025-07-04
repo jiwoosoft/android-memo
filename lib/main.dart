@@ -105,6 +105,7 @@ class Memo {
   String content;
   DateTime createdAt;
   DateTime updatedAt;
+  List<String> tags;
 
   Memo({
     required this.id,
@@ -112,6 +113,7 @@ class Memo {
     required this.content,
     required this.createdAt,
     required this.updatedAt,
+    this.tags = const [],
   });
 
   Map<String, dynamic> toJson() {
@@ -121,6 +123,7 @@ class Memo {
       'content': content,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'tags': tags,
     };
   }
 
@@ -131,6 +134,7 @@ class Memo {
       content: json['content'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
+      tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
     );
   }
 }
@@ -890,7 +894,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   List<Category> filteredCategories = [];
   bool _isEditMode = false;
   bool _isSearchMode = false;
+  bool _isTagFilterMode = false;
   String _searchQuery = '';
+  String? _selectedTag;
   final TextEditingController _searchController = TextEditingController();
   
   // 정렬 관련 상태
@@ -927,10 +933,32 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   }
 
   void _filterCategories() {
+    List<Category> baseCategories = categories;
+    
+    // 태그 필터링 먼저 적용
+    if (_selectedTag != null) {
+      baseCategories = categories.map((category) {
+        final filteredMemos = category.memos.where((memo) {
+          return memo.tags.contains(_selectedTag);
+        }).toList();
+        
+        if (filteredMemos.isNotEmpty) {
+          return Category(
+            id: category.id,
+            name: category.name,
+            icon: category.icon,
+            memos: filteredMemos,
+          );
+        }
+        return null;
+      }).where((category) => category != null).cast<Category>().toList();
+    }
+    
+    // 검색 필터링 적용
     if (_searchQuery.isEmpty) {
-      filteredCategories = categories.map((category) => _sortCategory(category)).toList();
+      filteredCategories = baseCategories.map((category) => _sortCategory(category)).toList();
     } else {
-      filteredCategories = categories.map((category) {
+      filteredCategories = baseCategories.map((category) {
         // 카테고리 이름이 검색어와 일치하는 경우
         if (category.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
           return _sortCategory(category);
@@ -939,7 +967,8 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         // 메모에서 검색어가 포함된 것들만 필터링
         final filteredMemos = category.memos.where((memo) {
           return memo.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                 memo.content.toLowerCase().contains(_searchQuery.toLowerCase());
+                 memo.content.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                 memo.tags.any((tag) => tag.toLowerCase().contains(_searchQuery.toLowerCase()));
         }).toList();
         
         // 해당 카테고리에 검색 결과가 있는 경우만 포함
@@ -955,6 +984,17 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         return null;
       }).where((category) => category != null).cast<Category>().toList();
     }
+  }
+  
+  // 모든 태그 수집
+  Set<String> _getAllTags() {
+    Set<String> allTags = {};
+    for (final category in categories) {
+      for (final memo in category.memos) {
+        allTags.addAll(memo.tags);
+      }
+    }
+    return allTags;
   }
   
   Category _sortCategory(Category category) {
@@ -993,6 +1033,122 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     }
     
     return sortedMemos;
+  }
+
+  void _showTagFilterDialog() {
+    final allTags = _getAllTags().toList();
+    
+    if (allTags.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.grey[850],
+          title: Text('태그 필터', style: TextStyle(color: Colors.white)),
+          content: Text(
+            '사용 가능한 태그가 없습니다.\n메모에 태그를 추가한 후 다시 시도해주세요.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('확인', style: TextStyle(color: Colors.teal)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: Text('태그 필터', style: TextStyle(color: Colors.white)),
+        content: Container(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '태그를 선택하여 메모를 필터링하세요',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+              SizedBox(height: 16),
+              // 전체 보기 옵션
+              ListTile(
+                leading: Icon(
+                  _selectedTag == null ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                  color: _selectedTag == null ? Colors.teal : Colors.grey,
+                ),
+                title: Text(
+                  '전체 보기',
+                  style: TextStyle(
+                    color: _selectedTag == null ? Colors.teal : Colors.white,
+                    fontWeight: _selectedTag == null ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                onTap: () {
+                  setState(() {
+                    _selectedTag = null;
+                    _filterCategories();
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              Divider(color: Colors.grey[700]),
+              // 태그 목록
+              ...allTags.map((tag) => ListTile(
+                leading: Icon(
+                  _selectedTag == tag ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                  color: _selectedTag == tag ? Colors.teal : Colors.grey,
+                ),
+                title: Text(
+                  tag,
+                  style: TextStyle(
+                    color: _selectedTag == tag ? Colors.teal : Colors.white,
+                    fontWeight: _selectedTag == tag ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                trailing: Chip(
+                  label: Text(
+                    '${_getTagCount(tag)}',
+                    style: TextStyle(fontSize: 10, color: Colors.white),
+                  ),
+                  backgroundColor: Colors.teal.shade600,
+                ),
+                onTap: () {
+                  setState(() {
+                    _selectedTag = tag;
+                    _filterCategories();
+                  });
+                  Navigator.pop(context);
+                },
+              )),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('닫기', style: TextStyle(color: Colors.grey)),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // 태그별 메모 개수 계산
+  int _getTagCount(String tag) {
+    int count = 0;
+    for (final category in categories) {
+      for (final memo in category.memos) {
+        if (memo.tags.contains(tag)) {
+          count++;
+        }
+      }
+    }
+    return count;
   }
 
   void _showSortDialog() {
@@ -1109,7 +1265,28 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('안전한 메모장'),
+        title: Row(
+          children: [
+            Text('안전한 메모장'),
+            if (_selectedTag != null) ...[
+              SizedBox(width: 8),
+              Chip(
+                label: Text(
+                  _selectedTag!,
+                  style: TextStyle(fontSize: 11, color: Colors.white),
+                ),
+                backgroundColor: Colors.teal.shade600,
+                deleteIcon: Icon(Icons.close, size: 16, color: Colors.white),
+                onDeleted: () {
+                  setState(() {
+                    _selectedTag = null;
+                    _filterCategories();
+                  });
+                },
+              ),
+            ],
+          ],
+        ),
         actions: [
           IconButton(
             icon: Icon(_isSearchMode ? Icons.close : Icons.search),
@@ -1119,65 +1296,85 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                 if (!_isSearchMode) {
                   _searchController.clear();
                   _searchQuery = '';
-                  filteredCategories = categories;
+                  _filterCategories();
                 }
               });
             },
             tooltip: _isSearchMode ? '검색 닫기' : '검색',
           ),
           IconButton(
+            icon: Icon(Icons.local_offer),
+            onPressed: _showTagFilterDialog,
+            tooltip: '태그 필터',
+          ),
+          IconButton(
             icon: Icon(Icons.sort),
             onPressed: _showSortDialog,
             tooltip: '정렬 옵션',
           ),
-          PopupMenuButton(
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'add_category',
-                child: Row(
-                  children: [
-                    Icon(Icons.add, color: Colors.teal),
-                    SizedBox(width: 8),
-                    Text('카테고리 추가'),
-                  ],
+                      PopupMenuButton(
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'add_category',
+                  child: Row(
+                    children: [
+                      Icon(Icons.add, color: Colors.teal),
+                      SizedBox(width: 8),
+                      Text('카테고리 추가'),
+                    ],
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'edit_mode',
-                child: Row(
-                  children: [
-                    Icon(_isEditMode ? Icons.check : Icons.edit, color: Colors.teal),
-                    SizedBox(width: 8),
-                    Text(_isEditMode ? '편집 완료' : '순서 편집'),
-                  ],
+                PopupMenuItem(
+                  value: 'edit_mode',
+                  child: Row(
+                    children: [
+                      Icon(_isEditMode ? Icons.check : Icons.edit, color: Colors.teal),
+                      SizedBox(width: 8),
+                      Text(_isEditMode ? '편집 완료' : '순서 편집'),
+                    ],
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.teal),
-                    SizedBox(width: 8),
-                    Text('설정'),
-                  ],
+                PopupMenuItem(
+                  value: 'tag_management',
+                  child: Row(
+                    children: [
+                      Icon(Icons.local_offer, color: Colors.teal),
+                      SizedBox(width: 8),
+                      Text('태그 관리'),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-            onSelected: (value) {
-              if (value == 'add_category') {
-                _addCategory();
-              } else if (value == 'edit_mode') {
-                setState(() {
-                  _isEditMode = !_isEditMode;
-                });
-              } else if (value == 'settings') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => SettingsScreen()),
-                );
-              }
-            },
-          ),
+                PopupMenuItem(
+                  value: 'settings',
+                  child: Row(
+                    children: [
+                      Icon(Icons.settings, color: Colors.teal),
+                      SizedBox(width: 8),
+                      Text('설정'),
+                    ],
+                  ),
+                ),
+              ],
+              onSelected: (value) {
+                if (value == 'add_category') {
+                  _addCategory();
+                } else if (value == 'edit_mode') {
+                  setState(() {
+                    _isEditMode = !_isEditMode;
+                  });
+                } else if (value == 'tag_management') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => TagManagementScreen()),
+                  );
+                } else if (value == 'settings') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SettingsScreen()),
+                  );
+                }
+              },
+            ),
         ],
       ),
       body: categories.isEmpty
@@ -1439,6 +1636,44 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             memo.title.isEmpty ? '제목 없음' : memo.title,
             style: TextStyle(color: Colors.white),
           ),
+          subtitle: memo.tags.isNotEmpty 
+            ? Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 2,
+                  children: memo.tags.take(3).map((tag) {
+                    return Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.teal.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        tag,
+                        style: TextStyle(
+                          color: Colors.teal,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  }).toList()
+                    ..addAll(memo.tags.length > 3 
+                      ? [Container(
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          child: Text(
+                            '+${memo.tags.length - 3}',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 10,
+                            ),
+                          ),
+                        )]
+                      : []),
+                ),
+              )
+            : null,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1657,6 +1892,37 @@ class MemoDetailScreen extends StatelessWidget {
                 '수정일: ${_formatDate(memo.updatedAt)}',
                 style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
+            // 태그 표시
+            if (memo.tags.isNotEmpty) ...[
+              SizedBox(height: 12),
+              Text(
+                '태그:',
+                style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: memo.tags.map((tag) {
+                  return Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.teal.withValues(alpha: 0.5)),
+                    ),
+                    child: Text(
+                      tag,
+                      style: TextStyle(
+                        color: Colors.teal,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
             SizedBox(height: 16),
             Expanded(
               child: SingleChildScrollView(
@@ -1691,6 +1957,8 @@ class AddMemoScreen extends StatefulWidget {
 class _AddMemoScreenState extends State<AddMemoScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+  final TextEditingController _tagController = TextEditingController();
+  List<String> _tags = [];
 
   @override
   void initState() {
@@ -1698,7 +1966,16 @@ class _AddMemoScreenState extends State<AddMemoScreen> {
     if (widget.memo != null) {
       _titleController.text = widget.memo!.title;
       _contentController.text = widget.memo!.content;
+      _tags = List.from(widget.memo!.tags);
     }
+  }
+  
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    _tagController.dispose();
+    super.dispose();
   }
 
   @override
@@ -1730,6 +2007,54 @@ class _AddMemoScreenState extends State<AddMemoScreen> {
               ),
             ),
             SizedBox(height: 16),
+            // 태그 입력 영역
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _tagController,
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: '태그 추가',
+                          labelStyle: TextStyle(color: Colors.white70),
+                          border: OutlineInputBorder(),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.teal),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(Icons.add, color: Colors.teal),
+                            onPressed: _addTag,
+                          ),
+                        ),
+                        onSubmitted: (_) => _addTag(),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                // 태그 칩 표시
+                if (_tags.isNotEmpty)
+                  Container(
+                    width: double.infinity,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: _tags.map((tag) {
+                        return Chip(
+                          label: Text(tag, style: TextStyle(color: Colors.white)),
+                          backgroundColor: Colors.teal.withValues(alpha: 0.3),
+                          deleteIcon: Icon(Icons.close, color: Colors.white70, size: 18),
+                          onDeleted: () => _removeTag(tag),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+              ],
+            ),
+            SizedBox(height: 16),
             Expanded(
               child: TextField(
                 controller: _contentController,
@@ -1754,6 +2079,22 @@ class _AddMemoScreenState extends State<AddMemoScreen> {
     );
   }
 
+  void _addTag() {
+    final tag = _tagController.text.trim();
+    if (tag.isNotEmpty && !_tags.contains(tag)) {
+      setState(() {
+        _tags.add(tag);
+        _tagController.clear();
+      });
+    }
+  }
+  
+  void _removeTag(String tag) {
+    setState(() {
+      _tags.remove(tag);
+    });
+  }
+
   void _saveMemo() {
     final title = _titleController.text.trim();
     final content = _contentController.text.trim();
@@ -1770,6 +2111,7 @@ class _AddMemoScreenState extends State<AddMemoScreen> {
       content: content,
       createdAt: widget.memo?.createdAt ?? now,
       updatedAt: now,
+      tags: _tags,
     );
 
     Navigator.pop(context, memo);
@@ -3008,6 +3350,281 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
           textAlign: TextAlign.center,
         ),
       ),
+    );
+  }
+}
+
+// 태그 관리 화면
+class TagManagementScreen extends StatefulWidget {
+  @override
+  _TagManagementScreenState createState() => _TagManagementScreenState();
+}
+
+class _TagManagementScreenState extends State<TagManagementScreen> {
+  List<Category> categories = [];
+  Set<String> allTags = {};
+  Map<String, int> tagCounts = {};
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+  
+  void _loadData() async {
+    final loadedCategories = await DataService.getCategories();
+    final tags = <String>{};
+    final counts = <String, int>{};
+    
+    for (final category in loadedCategories) {
+      for (final memo in category.memos) {
+        for (final tag in memo.tags) {
+          tags.add(tag);
+          counts[tag] = (counts[tag] ?? 0) + 1;
+        }
+      }
+    }
+    
+    setState(() {
+      categories = loadedCategories;
+      allTags = tags;
+      tagCounts = counts;
+    });
+  }
+  
+  void _deleteTag(String tag) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: Text('태그 삭제', style: TextStyle(color: Colors.white)),
+        content: Text(
+          '태그 "$tag"을(를) 모든 메모에서 삭제하시겠습니까?\n\n삭제된 태그는 복구할 수 없습니다.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('취소', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              _performDeleteTag(tag);
+              Navigator.pop(context);
+            },
+            child: Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _performDeleteTag(String tag) async {
+    // 모든 메모에서 태그 삭제
+    for (final category in categories) {
+      for (final memo in category.memos) {
+        memo.tags.remove(tag);
+      }
+    }
+    
+    // 데이터 저장
+    await DataService.saveCategories(categories);
+    
+    // 화면 업데이트
+    _loadData();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('태그 "$tag"이(가) 모든 메모에서 삭제되었습니다.'),
+        backgroundColor: Colors.teal,
+      ),
+    );
+  }
+  
+  void _renameTag(String oldTag) {
+    final TextEditingController controller = TextEditingController(text: oldTag);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: Text('태그 이름 변경', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          style: TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: '새로운 태그 이름을 입력하세요',
+            hintStyle: TextStyle(color: Colors.white54),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.teal),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey[600]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.teal),
+            ),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('취소', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              final newTag = controller.text.trim();
+              if (newTag.isNotEmpty && newTag != oldTag) {
+                _performRenameTag(oldTag, newTag);
+              }
+              Navigator.pop(context);
+            },
+            child: Text('변경', style: TextStyle(color: Colors.teal)),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _performRenameTag(String oldTag, String newTag) async {
+    // 중복 태그 체크
+    if (allTags.contains(newTag)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('태그 "$newTag"은(는) 이미 존재합니다.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    // 모든 메모에서 태그 이름 변경
+    for (final category in categories) {
+      for (final memo in category.memos) {
+        final index = memo.tags.indexOf(oldTag);
+        if (index >= 0) {
+          memo.tags[index] = newTag;
+        }
+      }
+    }
+    
+    // 데이터 저장
+    await DataService.saveCategories(categories);
+    
+    // 화면 업데이트
+    _loadData();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('태그 "$oldTag"이(가) "$newTag"으로 변경되었습니다.'),
+        backgroundColor: Colors.teal,
+      ),
+    );
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('태그 관리'),
+        backgroundColor: Colors.grey[850],
+        foregroundColor: Colors.white,
+      ),
+      body: allTags.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.local_offer_outlined,
+                    size: 64,
+                    color: Colors.white54,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    '사용 중인 태그가 없습니다',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 18,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '메모에 태그를 추가하면 여기에 표시됩니다',
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: EdgeInsets.all(16),
+              itemCount: allTags.length,
+              itemBuilder: (context, index) {
+                final tag = allTags.elementAt(index);
+                final count = tagCounts[tag] ?? 0;
+                
+                return Card(
+                  color: Colors.grey[850],
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.local_offer,
+                      color: Colors.teal,
+                    ),
+                    title: Text(
+                      tag,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '$count개의 메모에서 사용됨',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                    trailing: PopupMenuButton(
+                      color: Colors.grey[800],
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'rename',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit, color: Colors.teal),
+                              SizedBox(width: 8),
+                              Text('이름 변경', style: TextStyle(color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('삭제', style: TextStyle(color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onSelected: (value) {
+                        if (value == 'rename') {
+                          _renameTag(tag);
+                        } else if (value == 'delete') {
+                          _deleteTag(tag);
+                        }
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }
