@@ -7,7 +7,7 @@
 - **파일 크기**: 57.3MB
 - **패키지명**: `com.jiwoosoft.secure_memo`
 
-**[⬇️ APK 다운로드 (Google Drive)](https://drive.google.com/file/d/YOUR_GOOGLE_DRIVE_FILE_ID/view?usp=sharing)**
+**[⬇️ APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1gIqrBNjG0m2V41c9kDkH_lV6QQeo1pkN/view?usp=sharing)**
 
 > 📝 **Google Drive 다운로드 방법**:
 > 1. 위 링크 클릭
