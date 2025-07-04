@@ -2,8 +2,8 @@
 
 ## 📲 APK 다운로드
 
-### 🚀 최신 버전 (v1.0.2)
-**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1EPQrTSrcoLikGnLKUEk76Pfr1YWTS4YO/view?usp=drive_link)** | **[📋 릴리즈 노트](https://github.com/jiwoosoft/android-memo/releases)**
+### 🚀 최신 버전 (v1.0.3)
+**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1gXsyINdyKcwLZdf10KB4RuQVQGH1rmQd/view?usp=sharing)** | **[📋 릴리즈 노트](https://github.com/jiwoosoft/android-memo/releases)**
 
 - **파일 크기**: 58.8MB
 - **Android 요구사항**: 5.0+ (API 21+)
