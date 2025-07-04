@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:pinput/pinput.dart';
 import 'package:expandable/expandable.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'security_service.dart';
 
 void main() {
@@ -1210,7 +1211,27 @@ class _AddMemoScreenState extends State<AddMemoScreen> {
 }
 
 // 설정 화면
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
+  @override
+  _SettingsScreenState createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  PackageInfo? packageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPackageInfo();
+  }
+
+  Future<void> _loadPackageInfo() async {
+    final info = await PackageInfo.fromPlatform();
+    setState(() {
+      packageInfo = info;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1233,7 +1254,12 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.info, color: Colors.teal),
             title: Text('앱 정보', style: TextStyle(color: Colors.white)),
-            subtitle: Text('버전 1.0.0', style: TextStyle(color: Colors.white70)),
+            subtitle: Text(
+              packageInfo != null 
+                ? '버전 ${packageInfo!.version} (${packageInfo!.buildNumber})'
+                : '버전 정보 로딩 중...',
+              style: TextStyle(color: Colors.white70)
+            ),
             trailing: Icon(Icons.arrow_forward_ios, color: Colors.white70),
             onTap: () => _showAboutDialog(context),
           ),
@@ -1259,19 +1285,33 @@ class SettingsScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('안전한 메모장 v1.0.0', style: TextStyle(color: Colors.white)),
+            Text(
+              packageInfo != null 
+                ? '안전한 메모장 v${packageInfo!.version}'
+                : '안전한 메모장',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+            ),
+            if (packageInfo != null) ...[
+              SizedBox(height: 4),
+              Text('빌드 번호: ${packageInfo!.buildNumber}', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              Text('패키지명: ${packageInfo!.packageName}', style: TextStyle(color: Colors.white70, fontSize: 12)),
+            ],
+            SizedBox(height: 16),
+            Text('4자리 PIN 기반 보안 메모장 앱', style: TextStyle(color: Colors.white70)),
             SizedBox(height: 8),
-            Text('PIN 기반 보안 메모장 앱', style: TextStyle(color: Colors.white70)),
-            SizedBox(height: 8),
-            Text('개발자: Powered by HaneulCCM', style: TextStyle(color: Colors.white70)),
-            SizedBox(height: 8),
-            Text('개발자: jiwoosoft', style: TextStyle(color: Colors.white70)),
-            SizedBox(height: 8),
+            Text('📱 주요 기능:', style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+            Text('• 4자리 PIN 보안 인증', style: TextStyle(color: Colors.white70)),
+            Text('• 메모 데이터 암호화', style: TextStyle(color: Colors.white70)),
+            Text('• 카테고리별 메모 분류', style: TextStyle(color: Colors.white70)),
+            Text('• 갤럭시폰 최적화', style: TextStyle(color: Colors.white70)),
+            SizedBox(height: 16),
+            Text('👨‍💻 개발 정보:', style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+            Text('Powered by HaneulCCM', style: TextStyle(color: Colors.white70)),
+            Text('Developer: jiwoosoft', style: TextStyle(color: Colors.white70)),
             Text('YouTube: @haneulccm', style: TextStyle(color: Colors.white70)),
-            SizedBox(height: 8),
             Text('E-mail: webmaster@jiwoosoft.com', style: TextStyle(color: Colors.white70)),
             SizedBox(height: 8),
-            Text('Flutter로 개발되었습니다', style: TextStyle(color: Colors.white70)),
+            Text('Built with Flutter ❤️', style: TextStyle(color: Colors.white70)),
           ],
         ),
         actions: [
