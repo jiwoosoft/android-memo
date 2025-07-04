@@ -510,7 +510,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
             TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('확인', style: TextStyle(color: Colors.teal)),
-          ),
+            ),
         ],
       ),
     );
@@ -626,10 +626,10 @@ class _LoginScreenState extends State<LoginScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('확인', style: TextStyle(color: Colors.teal)),
-          ),
-        ],
+            ),
+          ],
       ),
-    );
+        );
   }
 }
 
@@ -1010,7 +1010,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         category.memos[index] = result;
       });
       _saveCategories();
-    }
+          }
   }
 
   void _viewMemo(Category category, Memo memo) {
@@ -1438,7 +1438,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text('나중에', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
-            onPressed: () {
+              onPressed: () {
               Navigator.pop(context);
               _openUpdateLink(result.releaseInfo);
             },
@@ -1657,9 +1657,9 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
                       color: Colors.grey[850],
                     ),
                   ),
-                ),
               ),
-            ],
+            ),
+          ],
           ),
         ),
       ),

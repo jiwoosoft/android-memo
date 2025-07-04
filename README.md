@@ -3,7 +3,7 @@
 ## 📲 APK 다운로드
 
 ### 🚀 최신 버전 (v1.0.1)
-**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/19bxJLpKmpBnSDomI0JfTGnBBnf-Pbpen/view?usp=drive_link)** | **[📋 릴리즈 노트](./releases/)**
+**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1EPQrTSrcoLikGnLKUEk76Pfr1YWTS4YO/view?usp=sharing)** | **[📋 릴리즈 노트](./releases/)**
 
 - **파일 크기**: 57.3MB
 - **Android 요구사항**: 5.0+ (API 21+)
