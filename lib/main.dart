@@ -221,15 +221,15 @@ class DataService {
     }
   }
 
-  static Future<void> saveCategories(List<Category> categories) async {
+  static Future<bool> saveCategories(List<Category> categories) async {
     final prefs = await SharedPreferences.getInstance();
     
     try {
       // 현재 세션의 PIN 가져오기
       final currentPin = await _getCurrentSessionPin();
       if (currentPin == null) {
-        print('PIN이 없어서 저장할 수 없습니다.');
-        return;
+        print('⚠️ 세션 PIN이 없어서 저장할 수 없습니다.');
+        return false;
       }
       
       // JSON 데이터 생성
@@ -241,9 +241,11 @@ class DataService {
       // 암호화된 데이터 저장
       await prefs.setString(_categoriesKey, encryptedData);
       
-      print('카테고리 데이터가 암호화되어 저장되었습니다.');
+      print('✅ 카테고리 데이터가 암호화되어 저장되었습니다.');
+      return true;
     } catch (e) {
-      print('카테고리 저장 오류: $e');
+      print('❌ 카테고리 저장 오류: $e');
+      return false;
     }
   }
   
@@ -432,10 +434,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     
-    // 보안 강화: 앱이 백그라운드로 갈 때 세션 PIN 클리어
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      print('앱이 백그라운드로 이동 - 세션 PIN 클리어');
+    // 🔧 보안 강화: 앱이 완전히 종료될 때만 세션 PIN 클리어
+    // (paused 상태에서는 클리어하지 않음 - 잠깐 나갔다가 돌아오는 경우를 고려)
+    if (state == AppLifecycleState.detached) {
+      print('앱이 완전 종료됨 - 세션 PIN 클리어');
       DataService.clearSessionPin();
     }
   }
@@ -726,6 +728,9 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
     await DataService.savePin(pin);
     await DataService.setNotFirstLaunch();
     
+    // 🔧 PIN 설정 후 세션 PIN 설정 (메모 저장을 위해 필요)
+    DataService.setSessionPin(pin);
+    
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => CategoryListScreen()),
     );
@@ -926,7 +931,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   }
 
   void _onSearchChanged() {
-    setState(() {
+      setState(() {
       _searchQuery = _searchController.text;
       _filterCategories();
     });
@@ -1039,8 +1044,8 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     final allTags = _getAllTags().toList();
     
     if (allTags.isEmpty) {
-      showDialog(
-        context: context,
+    showDialog(
+      context: context,
         builder: (context) => AlertDialog(
           backgroundColor: Colors.grey[850],
           title: Text('태그 필터', style: TextStyle(color: Colors.white)),
@@ -1089,7 +1094,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                   ),
                 ),
                 onTap: () {
-                  setState(() {
+                setState(() {
                     _selectedTag = null;
                     _filterCategories();
                   });
@@ -1258,7 +1263,10 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   }
 
   void _saveCategories() async {
-    await DataService.saveCategories(categories);
+    final success = await DataService.saveCategories(categories);
+    if (!success) {
+      _showErrorDialog('메모 저장에 실패했습니다.\n앱을 다시 시작해 주세요.');
+    }
   }
 
   @override
@@ -1864,6 +1872,29 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       ),
     );
   }
+  
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: Row(
+          children: [
+            Icon(Icons.error, color: Colors.red),
+            SizedBox(width: 8),
+            Text('오류', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Text(message, style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('확인', style: TextStyle(color: Colors.teal)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // 메모 상세 화면
@@ -2252,7 +2283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text('취소'),
           ),
           TextButton(
-            onPressed: () {
+              onPressed: () {
               if (_currentTheme != null) {
                 _applyTheme(_currentTheme!);
               }
@@ -2694,32 +2725,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// 업데이트 링크 열기
   void _openUpdateLink(ReleaseInfo? releaseInfo) async {
-    if (releaseInfo == null) return;
+    if (releaseInfo == null) {
+      _showErrorDialog('릴리즈 정보를 찾을 수 없습니다.');
+      return;
+    }
     
     // 릴리즈 정보에서 다운로드 링크 가져오기
     String? downloadUrl = releaseInfo.downloadUrl;
     
-    // 다운로드 링크가 없으면 기본 Google Drive 링크 사용
+    // 다운로드 링크가 없으면 최신 Google Drive 링크 사용
     if (downloadUrl == null || downloadUrl.isEmpty) {
-      downloadUrl = 'https://drive.google.com/file/d/1EPQrTSrcoLikGnLKUEk76Pfr1YWTS4YO/view?usp=drive_link';
+      downloadUrl = 'https://drive.google.com/file/d/19Rm9Klj0L3Fy_SkEYwqL1vNAm46P0gWi/view?usp=drivesdk';
+      print('⚠️ 릴리즈 노트에서 다운로드 링크를 찾지 못했습니다. 최신 링크를 사용합니다.');
     }
     
     try {
       final Uri url = Uri.parse(downloadUrl);
+      print('🔗 다운로드 링크 열기: $downloadUrl');
+      
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
+        print('✅ 외부 앱으로 링크 열기 성공');
       } else {
-        print('URL을 열 수 없습니다: $downloadUrl');
-        // 대안: 시스템 브라우저로 열기 시도
+        print('⚠️ 외부 앱으로 열기 실패, 기본 브라우저로 시도');
         try {
           await launchUrl(url, mode: LaunchMode.platformDefault);
+          print('✅ 기본 브라우저로 링크 열기 성공');
         } catch (e2) {
-          print('대안 방법으로도 URL 열기 실패: $e2');
+          print('❌ 기본 브라우저로도 열기 실패: $e2');
+          _showErrorDialog('브라우저를 열 수 없습니다.\n\n수동으로 다운로드하세요:\n$downloadUrl');
         }
       }
     } catch (e) {
-      print('URL 열기 오류: $e');
+      print('❌ URL 열기 오류: $e');
+      _showErrorDialog('다운로드 링크를 열 수 없습니다.\n\n수동으로 다운로드하세요:\n$downloadUrl');
     }
+  }
+  
+  /// 에러 다이얼로그 표시
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: Row(
+          children: [
+            Icon(Icons.error, color: Colors.red),
+            SizedBox(width: 8),
+            Text('오류', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Text(message, style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('확인', style: TextStyle(color: Colors.teal)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _logout(BuildContext context) {
@@ -3436,8 +3500,8 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('태그 "$tag"이(가) 모든 메모에서 삭제되었습니다.'),
-        backgroundColor: Colors.teal,
-      ),
+                backgroundColor: Colors.teal,
+              ),
     );
   }
   
@@ -3484,9 +3548,9 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
               Navigator.pop(context);
             },
             child: Text('변경', style: TextStyle(color: Colors.teal)),
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
     );
   }
   

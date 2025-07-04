@@ -139,11 +139,24 @@ class ReleaseInfo {
     String? apkUrl;
     final body = json['body'] ?? '';
     
-    // 릴리즈 노트에서 Google Drive 링크 추출
-    final googleDrivePattern = RegExp(r'https://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)/[^)\s]*');
-    final match = googleDrivePattern.firstMatch(body);
-    if (match != null) {
-      apkUrl = match.group(0);
+    // 릴리즈 노트에서 Google Drive 링크 추출 (여러 패턴 시도)
+    final googleDrivePatterns = [
+      RegExp(r'https://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)/[^)\s]*'),
+      RegExp(r'https://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)'),
+      RegExp(r'drive\.google\.com/file/d/([a-zA-Z0-9_-]+)'),
+    ];
+    
+    for (final pattern in googleDrivePatterns) {
+      final match = pattern.firstMatch(body);
+      if (match != null) {
+        apkUrl = match.group(0);
+        // 완전한 URL이 아닌 경우 https:// 추가
+        if (!apkUrl!.startsWith('https://')) {
+          apkUrl = 'https://$apkUrl';
+        }
+        print('✅ 릴리즈 노트에서 Google Drive 링크 발견: $apkUrl');
+        break;
+      }
     }
     
     // GitHub assets에서도 확인 (백업)

@@ -220,7 +220,7 @@ def git_commit_and_push(version, build):
     print("✅ Git 커밋 및 푸시 완료")
     return True
 
-def create_github_release(version, build):
+def create_github_release(version, build, google_drive_link=None):
     """GitHub 릴리즈 생성"""
     print("🏷️ GitHub 릴리즈 생성 시작...")
     
@@ -230,28 +230,58 @@ def create_github_release(version, build):
         print("💡 https://cli.github.com/ 에서 GitHub CLI를 설치하세요.")
         return False
     
+    # Google Drive 링크가 없으면 README.md에서 추출 시도
+    if not google_drive_link:
+        try:
+            with open('README.md', 'r', encoding='utf-8') as f:
+                readme_content = f.read()
+            
+            # Google Drive 링크 추출
+            import re
+            pattern = r'https://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)/[^)\s]*'
+            match = re.search(pattern, readme_content)
+            if match:
+                google_drive_link = match.group(0)
+                print(f"📋 README.md에서 Google Drive 링크 추출: {google_drive_link}")
+            else:
+                print("⚠️ Google Drive 링크를 찾을 수 없습니다.")
+        except Exception as e:
+            print(f"⚠️ README.md 읽기 실패: {e}")
+    
     # 릴리즈 노트 생성
+    download_section = ""
+    if google_drive_link:
+        download_section = f"""### 📱 **APK 다운로드**
+**[📱 APK 다운로드 (Google Drive)]({google_drive_link})**
+
+"""
+    
     release_notes = f"""## 🚀 v{version}+{build} 릴리즈
 
-### 📱 다운로드
-- **APK 파일**: SecureMemo_v{version}.apk
-- **다운로드 링크**: [Google Drive에서 다운로드](README.md#다운로드)
+{download_section}### ✨ **새로운 기능**
+- 🔍 **메모 검색 기능** - 카테고리명, 메모 제목, 내용 검색 지원
+- 🔄 **메모 정렬 옵션** - 생성일, 수정일, 제목, 내용별 정렬 (오름차순/내림차순)
+- 🎨 **다크/라이트 테마** - 시스템 설정 연동 또는 수동 선택
+- 📝 **폰트 크기 조정** - 4단계 폰트 크기 (작게/보통/크게/매우 크게)
+- 🏷️ **메모 태그 기능** - 태그 추가, 태그별 필터링, 태그 관리
 
-### 📋 주요 변경사항
-- 자동 배포 시스템 적용
-- 성능 최적화 및 안정성 개선
+### 🔧 **기술 정보**
+- **버전**: v{version}+{build}
+- **빌드 날짜**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+- **최소 Android 버전**: Android 5.0 (API 21+)
+- **파일 크기**: 약 60MB
 
-### 🔧 기술적 개선
-- 자동 빌드 및 배포 파이프라인 구축
-- Google Drive 자동 업로드 기능
+### 📋 **설치 방법**
+1. 위 Google Drive 링크에서 APK 파일 다운로드
+2. Android 설정에서 "알 수 없는 소스" 허용
+3. 다운로드한 APK 파일 실행하여 설치
 
-### 📚 참고사항
-- 업데이트 시 기존 메모 데이터는 유지됩니다
-- 4자리 PIN 인증 시스템
-- 카테고리별 메모 분류 및 암호화 저장
+### 🔒 **보안 주의사항**
+- PIN 코드를 분실하면 모든 데이터가 삭제됩니다
+- 정기적으로 중요한 메모를 백업하세요
 
 ---
-**Copyright (c) 2025 jiwoosoft. Powered by HaneulCCM.**
+💡 **문제가 있으신가요?** [GitHub Issues](https://github.com/jiwoosoft/android-memo/issues)에 문의해주세요!
 """
     
     # GitHub 릴리즈 생성
@@ -331,7 +361,22 @@ def main():
     
     # 5단계: GitHub 릴리즈 생성
     if not args.no_release:
-        if not create_github_release(new_version, new_build):
+        # Google Drive 링크 추출 (google_drive_uploader.py 실행 후 README.md에서 가져옴)
+        google_drive_link = None
+        try:
+            with open('README.md', 'r', encoding='utf-8') as f:
+                readme_content = f.read()
+            
+            import re
+            pattern = r'https://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)/[^)\s]*'
+            match = re.search(pattern, readme_content)
+            if match:
+                google_drive_link = match.group(0)
+                print(f"📋 README.md에서 Google Drive 링크 추출: {google_drive_link}")
+        except Exception as e:
+            print(f"⚠️ README.md 읽기 실패: {e}")
+        
+        if not create_github_release(new_version, new_build, google_drive_link):
             print("❌ GitHub 릴리즈 생성 실패")
             return False
     else:

@@ -25,8 +25,8 @@ android {
         applicationId = "com.jiwoosoft.secure_memo"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 21  // Android 5.0 (API 21) 이상
+        targetSdk = 34  // Android 14 (API 34) 타겟
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -36,6 +36,9 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // 코드 최적화 및 리소스 최적화 비활성화
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
