@@ -1,5 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     android:installLocation="internalOnly">
+    
+    <!-- 듀얼 메신저 기능 완전 비활성화 -->
+    <uses-feature
+        android:name="com.samsung.feature.dualfolderdisplay"
+        android:required="false" />
+    <uses-feature
+        android:name="com.samsung.feature.samsung_experience_mobile"
+        android:required="false" />
     <application
         android:label="안전한 메모장"
         android:name="${applicationName}"
@@ -7,6 +15,17 @@
         android:allowBackup="false"
         android:supportsRtl="false"
         android:extractNativeLibs="false">
+        
+        <!-- 듀얼 메신저 기능 비활성화 -->
+        <meta-data
+            android:name="com.samsung.android.multidisplay.keep_process_alive"
+            android:value="false" />
+        <meta-data
+            android:name="com.samsung.android.sdk.dualscreen.support"
+            android:value="false" />
+        <meta-data
+            android:name="com.samsung.android.multiwindow.activity.alias.enabled"
+            android:value="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -15,6 +34,8 @@
             android:clearTaskOnLaunch="true"
             android:excludeFromRecents="false"
             android:documentLaunchMode="never"
+            android:resizeableActivity="false"
+            android:supportsPictureInPicture="false"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
