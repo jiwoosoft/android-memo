@@ -270,10 +270,11 @@ cardColor: Colors.grey[900]     // 카드 배경
 
 이 프로젝트는 MIT 라이선스 하에 있습니다.
 
+### 🇺🇸 English License
 ```
 MIT License
 
-Copyright (c) 2024 jiwoosoft
+Copyright (c) 2025 jiwoosoft
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -292,6 +293,30 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+### 🇰🇷 한국어 라이선스
+```
+MIT 라이선스
+
+저작권 (c) 2025 jiwoosoft
+
+이 소프트웨어 및 관련 문서 파일(이하 "소프트웨어")의 복사본을 얻는 모든 사람에게 
+무료로 허가를 부여하며, 소프트웨어를 제한 없이 사용, 복사, 수정, 병합, 출판, 
+배포, 하위 라이선스 및/또는 판매할 수 있는 권한을 포함하여 소프트웨어를 다루는 
+권한을 부여합니다. 또한 소프트웨어가 제공되는 사람들에게 동일한 권한을 부여하는 
+것을 허용하며, 이는 다음 조건을 준수하는 경우에 해당합니다:
+
+위의 저작권 고지 및 이 허가 고지는 소프트웨어의 모든 복사본 또는 상당 부분에 
+포함되어야 합니다.
+
+소프트웨어는 어떠한 종류의 보증도 없이 "있는 그대로" 제공되며, 상품성, 특정 목적에 
+대한 적합성 및 비침해성에 대한 보증을 포함하되 이에 국한되지 않습니다. 어떠한 경우에도 
+작성자 또는 저작권 소유자는 소프트웨어 또는 소프트웨어의 사용 또는 기타 거래로 인해 
+발생하는 계약, 불법 행위 또는 기타 행위에 대한 클레임, 손해 또는 기타 책임에 대해 
+책임을 지지 않습니다.
+
+저작권 (c) 2025 jiwoosoft. Powered by HaneulCCM.
 ```
 
 ## 👨‍💻 개발자 정보
