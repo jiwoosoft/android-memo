@@ -13,6 +13,57 @@ void main() {
   runApp(MyApp());
 }
 
+// 글로벌 테마 상태 관리
+class ThemeNotifier extends ChangeNotifier {
+  AppTheme _currentTheme = AppTheme.dark;
+  
+  AppTheme get currentTheme => _currentTheme;
+  
+  void setTheme(AppTheme theme) {
+    _currentTheme = theme;
+    notifyListeners();
+  }
+  
+  ThemeMode get themeMode {
+    switch (_currentTheme) {
+      case AppTheme.system:
+        return ThemeMode.system;
+      case AppTheme.light:
+        return ThemeMode.light;
+      case AppTheme.dark:
+        return ThemeMode.dark;
+    }
+  }
+}
+
+// 정렬 옵션 enum
+enum SortOption {
+  createdDate,    // 생성일순
+  updatedDate,    // 수정일순
+  title,          // 제목순
+  content,        // 내용순
+}
+
+enum SortOrder {
+  ascending,      // 오름차순
+  descending,     // 내림차순
+}
+
+// 테마 옵션 enum
+enum AppTheme {
+  system,         // 시스템 설정 따라가기
+  light,          // 라이트 테마
+  dark,           // 다크 테마
+}
+
+// 폰트 크기 옵션 enum
+enum FontSize {
+  small,          // 작게
+  medium,         // 보통
+  large,          // 크게
+  extraLarge,     // 매우 크게
+}
+
 // 데이터 모델 클래스
 class Category {
   String id;
@@ -89,6 +140,10 @@ class DataService {
   static const String _pinKey = 'app_pin';
   static const String _categoriesKey = 'categories';
   static const String _isFirstLaunchKey = 'is_first_launch';
+  static const String _sortOptionKey = 'sort_option';
+  static const String _sortOrderKey = 'sort_order';
+  static const String _themeKey = 'app_theme';
+  static const String _fontSizeKey = 'font_size';
 
   static Future<bool> isFirstLaunch() async {
     final prefs = await SharedPreferences.getInstance();
@@ -199,6 +254,50 @@ class DataService {
     _sessionPin = pin;
   }
   
+  // 정렬 설정 저장 및 로드
+  static Future<void> saveSortSettings(SortOption option, SortOrder order) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_sortOptionKey, option.name);
+    await prefs.setString(_sortOrderKey, order.name);
+  }
+  
+  static Future<Map<String, dynamic>> loadSortSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final optionName = prefs.getString(_sortOptionKey) ?? 'createdDate';
+    final orderName = prefs.getString(_sortOrderKey) ?? 'descending';
+    
+    return {
+      'option': SortOption.values.firstWhere((e) => e.name == optionName, orElse: () => SortOption.createdDate),
+      'order': SortOrder.values.firstWhere((e) => e.name == orderName, orElse: () => SortOrder.descending),
+    };
+  }
+  
+  // 테마 설정 저장 및 로드
+  static Future<void> saveThemeSettings(AppTheme theme) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeKey, theme.name);
+  }
+  
+  static Future<AppTheme> loadThemeSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themeName = prefs.getString(_themeKey) ?? 'dark';
+    
+    return AppTheme.values.firstWhere((e) => e.name == themeName, orElse: () => AppTheme.dark);
+  }
+  
+  // 폰트 크기 설정 저장 및 로드
+  static Future<void> saveFontSizeSettings(FontSize fontSize) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_fontSizeKey, fontSize.name);
+  }
+  
+  static Future<FontSize> loadFontSizeSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final fontSizeName = prefs.getString(_fontSizeKey) ?? 'medium';
+    
+    return FontSize.values.firstWhere((e) => e.name == fontSizeName, orElse: () => FontSize.medium);
+  }
+  
   static void clearSessionPin() {
     _sessionPin = null;
   }
@@ -234,11 +333,88 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  AppTheme _currentTheme = AppTheme.dark;
+  FontSize _currentFontSize = FontSize.medium;
+  
   @override
   void initState() {
     super.initState();
     // 앱 생명주기 관찰자 등록
     WidgetsBinding.instance.addObserver(this);
+    _loadThemeSettings();
+    _loadFontSizeSettings();
+  }
+  
+  void _loadThemeSettings() async {
+    final themeSettings = await DataService.loadThemeSettings();
+    setState(() {
+      _currentTheme = themeSettings;
+    });
+  }
+  
+  void _loadFontSizeSettings() async {
+    final fontSizeSettings = await DataService.loadFontSizeSettings();
+    setState(() {
+      _currentFontSize = fontSizeSettings;
+    });
+  }
+  
+  void updateTheme(AppTheme newTheme) {
+    setState(() {
+      _currentTheme = newTheme;
+    });
+    DataService.saveThemeSettings(newTheme);
+  }
+  
+  void updateFontSize(FontSize newFontSize) {
+    setState(() {
+      _currentFontSize = newFontSize;
+    });
+    DataService.saveFontSizeSettings(newFontSize);
+  }
+  
+  ThemeMode get _themeMode {
+    switch (_currentTheme) {
+      case AppTheme.system:
+        return ThemeMode.system;
+      case AppTheme.light:
+        return ThemeMode.light;
+      case AppTheme.dark:
+        return ThemeMode.dark;
+    }
+  }
+  
+  double get _fontSizeMultiplier {
+    switch (_currentFontSize) {
+      case FontSize.small:
+        return 0.8;
+      case FontSize.medium:
+        return 1.0;
+      case FontSize.large:
+        return 1.2;
+      case FontSize.extraLarge:
+        return 1.4;
+    }
+  }
+  
+  TextTheme _buildTextTheme(TextTheme baseTheme) {
+    return TextTheme(
+      displayLarge: baseTheme.displayLarge?.copyWith(fontSize: (baseTheme.displayLarge?.fontSize ?? 57) * _fontSizeMultiplier),
+      displayMedium: baseTheme.displayMedium?.copyWith(fontSize: (baseTheme.displayMedium?.fontSize ?? 45) * _fontSizeMultiplier),
+      displaySmall: baseTheme.displaySmall?.copyWith(fontSize: (baseTheme.displaySmall?.fontSize ?? 36) * _fontSizeMultiplier),
+      headlineLarge: baseTheme.headlineLarge?.copyWith(fontSize: (baseTheme.headlineLarge?.fontSize ?? 32) * _fontSizeMultiplier),
+      headlineMedium: baseTheme.headlineMedium?.copyWith(fontSize: (baseTheme.headlineMedium?.fontSize ?? 28) * _fontSizeMultiplier),
+      headlineSmall: baseTheme.headlineSmall?.copyWith(fontSize: (baseTheme.headlineSmall?.fontSize ?? 24) * _fontSizeMultiplier),
+      titleLarge: baseTheme.titleLarge?.copyWith(fontSize: (baseTheme.titleLarge?.fontSize ?? 22) * _fontSizeMultiplier),
+      titleMedium: baseTheme.titleMedium?.copyWith(fontSize: (baseTheme.titleMedium?.fontSize ?? 16) * _fontSizeMultiplier),
+      titleSmall: baseTheme.titleSmall?.copyWith(fontSize: (baseTheme.titleSmall?.fontSize ?? 14) * _fontSizeMultiplier),
+      bodyLarge: baseTheme.bodyLarge?.copyWith(fontSize: (baseTheme.bodyLarge?.fontSize ?? 16) * _fontSizeMultiplier),
+      bodyMedium: baseTheme.bodyMedium?.copyWith(fontSize: (baseTheme.bodyMedium?.fontSize ?? 14) * _fontSizeMultiplier),
+      bodySmall: baseTheme.bodySmall?.copyWith(fontSize: (baseTheme.bodySmall?.fontSize ?? 12) * _fontSizeMultiplier),
+      labelLarge: baseTheme.labelLarge?.copyWith(fontSize: (baseTheme.labelLarge?.fontSize ?? 14) * _fontSizeMultiplier),
+      labelMedium: baseTheme.labelMedium?.copyWith(fontSize: (baseTheme.labelMedium?.fontSize ?? 12) * _fontSizeMultiplier),
+      labelSmall: baseTheme.labelSmall?.copyWith(fontSize: (baseTheme.labelSmall?.fontSize ?? 11) * _fontSizeMultiplier),
+    );
   }
 
   @override
@@ -265,8 +441,24 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     return MaterialApp(
       title: '안전한 메모장',
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.dark,
-      theme: ThemeData.light(),
+      themeMode: _themeMode,
+      theme: ThemeData(
+        brightness: Brightness.light,
+        primarySwatch: Colors.teal,
+        scaffoldBackgroundColor: Colors.white,
+        cardColor: Colors.grey[100],
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.teal,
+          foregroundColor: Colors.white,
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Colors.teal,
+        ),
+        textTheme: _buildTextTheme(TextTheme(
+          bodyLarge: TextStyle(color: Colors.black87),
+          bodyMedium: TextStyle(color: Colors.black54),
+        )),
+      ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         primarySwatch: Colors.teal,
@@ -279,10 +471,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         floatingActionButtonTheme: FloatingActionButtonThemeData(
           backgroundColor: Colors.teal,
         ),
-        textTheme: TextTheme(
+        textTheme: _buildTextTheme(TextTheme(
           bodyLarge: TextStyle(color: Colors.white),
           bodyMedium: TextStyle(color: Colors.white70),
-        ),
+        )),
       ),
       home: SplashScreen(),
     );
@@ -695,18 +887,217 @@ class CategoryListScreen extends StatefulWidget {
 
 class _CategoryListScreenState extends State<CategoryListScreen> {
   List<Category> categories = [];
+  List<Category> filteredCategories = [];
   bool _isEditMode = false;
+  bool _isSearchMode = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  
+  // 정렬 관련 상태
+  SortOption _currentSortOption = SortOption.createdDate;
+  SortOrder _currentSortOrder = SortOrder.descending;
 
   @override
   void initState() {
     super.initState();
     _loadCategories();
+    _loadSortSettings();
+    _searchController.addListener(_onSearchChanged);
+  }
+  
+  void _loadSortSettings() async {
+    final settings = await DataService.loadSortSettings();
+    setState(() {
+      _currentSortOption = settings['option'];
+      _currentSortOrder = settings['order'];
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text;
+      _filterCategories();
+    });
+  }
+
+  void _filterCategories() {
+    if (_searchQuery.isEmpty) {
+      filteredCategories = categories.map((category) => _sortCategory(category)).toList();
+    } else {
+      filteredCategories = categories.map((category) {
+        // 카테고리 이름이 검색어와 일치하는 경우
+        if (category.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
+          return _sortCategory(category);
+        }
+        
+        // 메모에서 검색어가 포함된 것들만 필터링
+        final filteredMemos = category.memos.where((memo) {
+          return memo.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                 memo.content.toLowerCase().contains(_searchQuery.toLowerCase());
+        }).toList();
+        
+        // 해당 카테고리에 검색 결과가 있는 경우만 포함
+        if (filteredMemos.isNotEmpty) {
+          return Category(
+            id: category.id,
+            name: category.name,
+            icon: category.icon,
+            memos: _sortMemos(filteredMemos),
+          );
+        }
+        
+        return null;
+      }).where((category) => category != null).cast<Category>().toList();
+    }
+  }
+  
+  Category _sortCategory(Category category) {
+    return Category(
+      id: category.id,
+      name: category.name,
+      icon: category.icon,
+      memos: _sortMemos(category.memos),
+    );
+  }
+  
+  List<Memo> _sortMemos(List<Memo> memos) {
+    List<Memo> sortedMemos = List.from(memos);
+    
+    switch (_currentSortOption) {
+      case SortOption.createdDate:
+        sortedMemos.sort((a, b) => _currentSortOrder == SortOrder.ascending 
+            ? a.createdAt.compareTo(b.createdAt)
+            : b.createdAt.compareTo(a.createdAt));
+        break;
+      case SortOption.updatedDate:
+        sortedMemos.sort((a, b) => _currentSortOrder == SortOrder.ascending 
+            ? a.updatedAt.compareTo(b.updatedAt)
+            : b.updatedAt.compareTo(a.updatedAt));
+        break;
+      case SortOption.title:
+        sortedMemos.sort((a, b) => _currentSortOrder == SortOrder.ascending 
+            ? a.title.compareTo(b.title)
+            : b.title.compareTo(a.title));
+        break;
+      case SortOption.content:
+        sortedMemos.sort((a, b) => _currentSortOrder == SortOrder.ascending 
+            ? a.content.compareTo(b.content)
+            : b.content.compareTo(a.content));
+        break;
+    }
+    
+    return sortedMemos;
+  }
+
+  void _showSortDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('정렬 옵션'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('정렬 기준', style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            RadioListTile<SortOption>(
+              title: Text('생성일순'),
+              value: SortOption.createdDate,
+              groupValue: _currentSortOption,
+              onChanged: (value) {
+                setState(() {
+                  _currentSortOption = value!;
+                });
+              },
+            ),
+            RadioListTile<SortOption>(
+              title: Text('수정일순'),
+              value: SortOption.updatedDate,
+              groupValue: _currentSortOption,
+              onChanged: (value) {
+                setState(() {
+                  _currentSortOption = value!;
+                });
+              },
+            ),
+            RadioListTile<SortOption>(
+              title: Text('제목순'),
+              value: SortOption.title,
+              groupValue: _currentSortOption,
+              onChanged: (value) {
+                setState(() {
+                  _currentSortOption = value!;
+                });
+              },
+            ),
+            RadioListTile<SortOption>(
+              title: Text('내용순'),
+              value: SortOption.content,
+              groupValue: _currentSortOption,
+              onChanged: (value) {
+                setState(() {
+                  _currentSortOption = value!;
+                });
+              },
+            ),
+            SizedBox(height: 16),
+            Text('정렬 순서', style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            RadioListTile<SortOrder>(
+              title: Text('오름차순'),
+              value: SortOrder.ascending,
+              groupValue: _currentSortOrder,
+              onChanged: (value) {
+                setState(() {
+                  _currentSortOrder = value!;
+                });
+              },
+            ),
+            RadioListTile<SortOrder>(
+              title: Text('내림차순'),
+              value: SortOrder.descending,
+              groupValue: _currentSortOrder,
+              onChanged: (value) {
+                setState(() {
+                  _currentSortOrder = value!;
+                });
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              _applySortSettings();
+              Navigator.pop(context);
+            },
+            child: Text('적용'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _applySortSettings() {
+    DataService.saveSortSettings(_currentSortOption, _currentSortOrder);
+    _filterCategories();
   }
 
   void _loadCategories() async {
     final loadedCategories = await DataService.getCategories();
     setState(() {
       categories = loadedCategories;
+      filteredCategories = loadedCategories;
     });
   }
 
@@ -720,6 +1111,25 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       appBar: AppBar(
         title: Text('안전한 메모장'),
         actions: [
+          IconButton(
+            icon: Icon(_isSearchMode ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearchMode = !_isSearchMode;
+                if (!_isSearchMode) {
+                  _searchController.clear();
+                  _searchQuery = '';
+                  filteredCategories = categories;
+                }
+              });
+            },
+            tooltip: _isSearchMode ? '검색 닫기' : '검색',
+          ),
+          IconButton(
+            icon: Icon(Icons.sort),
+            onPressed: _showSortDialog,
+            tooltip: '정렬 옵션',
+          ),
           PopupMenuButton(
             itemBuilder: (context) => [
               PopupMenuItem(
@@ -774,9 +1184,18 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
           ? Center(
               child: CircularProgressIndicator(),
             )
-          : _isEditMode
-              ? _buildReorderableList()
-              : _buildNormalList(),
+          : Column(
+              children: [
+                // 검색 바
+                if (_isSearchMode) _buildSearchBar(),
+                // 메인 컨텐츠
+                Expanded(
+                  child: _isEditMode
+                      ? _buildReorderableList()
+                      : _buildNormalList(),
+                ),
+              ],
+            ),
       // 하단 카피라이트
       bottomNavigationBar: Container(
         padding: EdgeInsets.all(16),
@@ -796,12 +1215,87 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     );
   }
 
+  Widget _buildSearchBar() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[850],
+        border: Border(
+          bottom: BorderSide(color: Colors.grey[700]!),
+        ),
+      ),
+      child: TextField(
+        controller: _searchController,
+        style: TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: '메모 검색...',
+          hintStyle: TextStyle(color: Colors.white54),
+          prefixIcon: Icon(Icons.search, color: Colors.teal),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.clear, color: Colors.white54),
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.teal),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey[600]!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.teal),
+          ),
+        ),
+        autofocus: true,
+      ),
+    );
+  }
+
   Widget _buildNormalList() {
+    final displayCategories = filteredCategories;
+    
+    if (displayCategories.isEmpty && _searchQuery.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: Colors.white54,
+            ),
+            SizedBox(height: 16),
+            Text(
+              '검색 결과가 없습니다',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 18,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '"$_searchQuery"에 대한 결과를 찾을 수 없습니다',
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
     return ListView.builder(
       padding: EdgeInsets.all(16),
-      itemCount: categories.length,
+      itemCount: displayCategories.length,
         itemBuilder: (context, index) {
-        final category = categories[index];
+        final category = displayCategories[index];
           return Card(
           margin: EdgeInsets.only(bottom: 12),
           child: ExpandablePanel(
@@ -824,30 +1318,47 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: Icon(Icons.add, color: Colors.teal),
-                    onPressed: () => _addMemo(category),
-                    tooltip: '메모 추가',
-                  ),
-                  PopupMenuButton(
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Text('이름 수정'),
+                  if (!_isSearchMode) ...[
+                    IconButton(
+                      icon: Icon(Icons.add, color: Colors.teal),
+                      onPressed: () => _addMemo(category),
+                      tooltip: '메모 추가',
+                    ),
+                    PopupMenuButton(
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Text('이름 수정'),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text('삭제'),
+                        ),
+                      ],
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _editCategory(category);
+                        } else if (value == 'delete') {
+                          _deleteCategory(category);
+                        }
+                      },
+                    ),
+                  ],
+                  if (_isSearchMode && _searchQuery.isNotEmpty)
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.teal.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Text('삭제'),
+                      child: Text(
+                        '검색 결과',
+                        style: TextStyle(
+                          color: Colors.teal,
+                          fontSize: 12,
+                        ),
                       ),
-                    ],
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        _editCategory(category);
-                      } else if (value == 'delete') {
-                        _deleteCategory(category);
-                      }
-                    },
-                  ),
+                    ),
                 ],
               ),
             ),
@@ -1290,11 +1801,29 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   PackageInfo? packageInfo;
+  AppTheme? _currentTheme;
+  FontSize? _currentFontSize;
 
   @override
   void initState() {
     super.initState();
     _loadPackageInfo();
+    _loadThemeSettings();
+    _loadFontSizeSettings();
+  }
+  
+  Future<void> _loadThemeSettings() async {
+    final theme = await DataService.loadThemeSettings();
+    setState(() {
+      _currentTheme = theme;
+    });
+  }
+  
+  Future<void> _loadFontSizeSettings() async {
+    final fontSize = await DataService.loadFontSizeSettings();
+    setState(() {
+      _currentFontSize = fontSize;
+    });
   }
 
   Future<void> _loadPackageInfo() async {
@@ -1302,6 +1831,181 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       packageInfo = info;
     });
+  }
+  
+  String _getThemeDisplayName(AppTheme? theme) {
+    switch (theme) {
+      case AppTheme.system:
+        return '시스템 설정 따름';
+      case AppTheme.light:
+        return '라이트 테마';
+      case AppTheme.dark:
+        return '다크 테마';
+      default:
+        return '테마 로딩 중...';
+    }
+  }
+  
+  String _getFontSizeDisplayName(FontSize? fontSize) {
+    switch (fontSize) {
+      case FontSize.small:
+        return '작게';
+      case FontSize.medium:
+        return '보통';
+      case FontSize.large:
+        return '크게';
+      case FontSize.extraLarge:
+        return '매우 크게';
+      default:
+        return '폰트 크기 로딩 중...';
+    }
+  }
+  
+  void _showThemeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('테마 선택'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<AppTheme>(
+              title: Text('시스템 설정 따름'),
+              subtitle: Text('디바이스 설정에 따라 자동 변경'),
+              value: AppTheme.system,
+              groupValue: _currentTheme,
+              onChanged: (value) {
+                setState(() {
+                  _currentTheme = value;
+                });
+              },
+            ),
+            RadioListTile<AppTheme>(
+              title: Text('라이트 테마'),
+              subtitle: Text('밝은 배경의 테마'),
+              value: AppTheme.light,
+              groupValue: _currentTheme,
+              onChanged: (value) {
+                setState(() {
+                  _currentTheme = value;
+                });
+              },
+            ),
+            RadioListTile<AppTheme>(
+              title: Text('다크 테마'),
+              subtitle: Text('어두운 배경의 테마'),
+              value: AppTheme.dark,
+              groupValue: _currentTheme,
+              onChanged: (value) {
+                setState(() {
+                  _currentTheme = value;
+                });
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (_currentTheme != null) {
+                _applyTheme(_currentTheme!);
+              }
+              Navigator.pop(context);
+            },
+            child: Text('적용'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _applyTheme(AppTheme theme) {
+    // MyApp의 updateTheme 메서드를 호출하기 위해 context를 통해 접근
+    final myAppState = context.findAncestorStateOfType<_MyAppState>();
+    myAppState?.updateTheme(theme);
+  }
+  
+  void _showFontSizeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('폰트 크기 선택'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<FontSize>(
+              title: Text('작게', style: TextStyle(fontSize: 12)),
+              subtitle: Text('화면에 더 많은 내용을 표시합니다', style: TextStyle(fontSize: 10)),
+              value: FontSize.small,
+              groupValue: _currentFontSize,
+              onChanged: (value) {
+                setState(() {
+                  _currentFontSize = value;
+                });
+              },
+            ),
+            RadioListTile<FontSize>(
+              title: Text('보통', style: TextStyle(fontSize: 14)),
+              subtitle: Text('기본 폰트 크기입니다', style: TextStyle(fontSize: 12)),
+              value: FontSize.medium,
+              groupValue: _currentFontSize,
+              onChanged: (value) {
+                setState(() {
+                  _currentFontSize = value;
+                });
+              },
+            ),
+            RadioListTile<FontSize>(
+              title: Text('크게', style: TextStyle(fontSize: 16)),
+              subtitle: Text('더 큰 폰트로 읽기 쉽게 합니다', style: TextStyle(fontSize: 14)),
+              value: FontSize.large,
+              groupValue: _currentFontSize,
+              onChanged: (value) {
+                setState(() {
+                  _currentFontSize = value;
+                });
+              },
+            ),
+            RadioListTile<FontSize>(
+              title: Text('매우 크게', style: TextStyle(fontSize: 18)),
+              subtitle: Text('가장 큰 폰트로 가독성을 높입니다', style: TextStyle(fontSize: 16)),
+              value: FontSize.extraLarge,
+              groupValue: _currentFontSize,
+              onChanged: (value) {
+                setState(() {
+                  _currentFontSize = value;
+                });
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (_currentFontSize != null) {
+                _applyFontSize(_currentFontSize!);
+              }
+              Navigator.pop(context);
+            },
+            child: Text('적용'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _applyFontSize(FontSize fontSize) {
+    // MyApp의 updateFontSize 메서드를 호출하기 위해 context를 통해 접근
+    final myAppState = context.findAncestorStateOfType<_MyAppState>();
+    myAppState?.updateFontSize(fontSize);
   }
 
   @override
@@ -1321,6 +2025,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               MaterialPageRoute(builder: (context) => ChangePinScreen()),
             ),
+          ),
+          Divider(color: Colors.grey[700]),
+          ListTile(
+            leading: Icon(Icons.palette, color: Colors.teal),
+            title: Text('테마 설정', style: TextStyle(color: Colors.white)),
+            subtitle: Text(_getThemeDisplayName(_currentTheme), style: TextStyle(color: Colors.white70)),
+            trailing: Icon(Icons.arrow_forward_ios, color: Colors.white70),
+            onTap: () => _showThemeDialog(context),
+          ),
+          Divider(color: Colors.grey[700]),
+          ListTile(
+            leading: Icon(Icons.text_fields, color: Colors.teal),
+            title: Text('폰트 크기', style: TextStyle(color: Colors.white)),
+            subtitle: Text(_getFontSizeDisplayName(_currentFontSize), style: TextStyle(color: Colors.white70)),
+            trailing: Icon(Icons.arrow_forward_ios, color: Colors.white70),
+            onTap: () => _showFontSizeDialog(context),
           ),
           Divider(color: Colors.grey[700]),
           ListTile(

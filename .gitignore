@@ -12,6 +12,13 @@
 .swiftpm/
 migrate_working_dir/
 
+# Google Drive API 인증 파일
+credentials.json
+token.json
+
+# 자동 생성된 인증 토큰
+*.json
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -43,3 +50,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Google Drive API 인증 파일
+credentials.json
+token.json
+service-account.json
+
+# 자동 생성된 설정 파일
+config.json

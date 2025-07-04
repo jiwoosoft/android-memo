@@ -3,7 +3,7 @@
 ## 📲 APK 다운로드
 
 ### 🚀 최신 버전 (v1.0.3)
-**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1gXsyINdyKcwLZdf10KB4RuQVQGH1rmQd/view?usp=sharing)** | **[📋 릴리즈 노트](https://github.com/jiwoosoft/android-memo/releases)**
+**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1mhWt18-HroWuosSMxzNDyNYdTcSjNBjQ/view?usp=drivesdk)** | **[📋 릴리즈 노트](https://github.com/jiwoosoft/android-memo/releases)**
 
 - **파일 크기**: 58.8MB
 - **Android 요구사항**: 5.0+ (API 21+)
@@ -218,19 +218,19 @@ cardColor: Colors.grey[900]     // 카드 배경
 
 ## 🔄 업데이트 로그
 
-### v1.2.0 (2024-12-23)
+### v1.0.3 (2024-12-23)
 - 🔧 갤럭시폰 듀얼 메신저 기능 완전 비활성화
 - 🎯 AndroidManifest.xml 특화 설정으로 중복 설치 방지
 - ✏️ 메모 텍스트 입력 필드 상단 정렬로 개선
 - 📱 삼성 갤럭시 듀얼 eSIM 환경 완벽 지원
 
-### v1.1.0 (2024-12-22)
+### v1.0.3 (2024-12-22)
 - 🔧 중복 앱 설치 문제 해결 (패키지명 변경)
 - 🎨 메모 리스트 표시 방식 개선 (제목만 표시)
 - ⚙️ 카테고리 고급 관리 기능 추가
 - 🔄 드래그 앤 드롭 순서 변경 기능
 
-### v1.0.0 (2024-12-21)
+### v1.0.3 (2024-12-21)
 - ✅ PIN 기반 로그인 시스템 구현
 - ✅ 카테고리별 메모 분류 기능 추가
 - ✅ 확장 가능한 메모 리스트 구현
@@ -254,17 +254,17 @@ cardColor: Colors.grey[900]     // 카드 배경
 
 ## 🚀 향후 계획
 
-### v1.1.0 (계획)
+### v1.0.4 (계획)
 - [ ] 메모 검색 기능 추가
-- [ ] 메모 내 이미지 첨부 기능
-- [ ] 백업/복원 기능 (파일 export/import)
-- [ ] 지문 인증 지원
-
-### v1.2.0 (계획)
-- [ ] 메모 태그 기능
 - [ ] 메모 정렬 옵션 (날짜, 제목, 내용)
 - [ ] 다크/라이트 테마 선택
 - [ ] 폰트 크기 조정 기능
+
+### v1.0.5 (계획)
+- [ ] 메모 태그 기능
+- [ ] 백업/복원 기능 (파일 export/import)
+- [ ] 지문 인증 지원
+- [ ] 메모 내 이미지 첨부 기능
 
 ## 📄 라이선스
 
