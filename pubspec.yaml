@@ -40,9 +40,9 @@ flutter_launcher_icons:
   
 # 스플래시 화면 설정
 flutter_native_splash:
-  color: "#ffffff"
+  color: "#000000"
   image: "assets/splash_logo.png"
   android_12:
     image: "assets/splash_logo.png"
-    color: "#ffffff"
+    color: "#000000"
   web: false
