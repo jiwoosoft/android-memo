@@ -276,87 +276,93 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.security,
-                size: 80,
-                color: Colors.teal,
-              ),
-              SizedBox(height: 30),
-              Text(
-                _isConfirming ? 'PIN 번호를 다시 입력하세요' : 'PIN 번호를 설정하세요',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.security,
+                  size: 80,
+                  color: Colors.teal,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 10),
-              Text(
-                '4자리 숫자로 입력하세요',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white70,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 40),
-              Pinput(
-                controller: _isConfirming ? _confirmPinController : _pinController,
-                length: 4,
-                obscureText: true,
-                obscuringCharacter: '●',
-                onCompleted: _onPinCompleted,
-                defaultPinTheme: PinTheme(
-                  width: 60,
-                  height: 60,
-                  textStyle: TextStyle(
+                SizedBox(height: 30),
+                Text(
+                  _isConfirming ? 'PIN 번호를 다시 입력하세요' : 'PIN 번호를 설정하세요',
+                  style: TextStyle(
                     fontSize: 20,
+                    fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    fontWeight: FontWeight.w600,
                   ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey[700]!),
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.grey[850],
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 10),
+                Text(
+                  '4자리 숫자로 입력하세요',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white70,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 40),
+                Center(
+                  child: Pinput(
+                    controller: _isConfirming ? _confirmPinController : _pinController,
+                    length: 4,
+                    obscureText: true,
+                    obscuringCharacter: '●',
+                    onCompleted: _onPinCompleted,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    defaultPinTheme: PinTheme(
+                      width: 60,
+                      height: 60,
+                      textStyle: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[700]!),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey[850],
+                      ),
+                    ),
+                    focusedPinTheme: PinTheme(
+                      width: 60,
+                      height: 60,
+                      textStyle: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.teal),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey[850],
+                      ),
+                    ),
                   ),
                 ),
-                focusedPinTheme: PinTheme(
-                  width: 60,
-                  height: 60,
-                  textStyle: TextStyle(
-                    fontSize: 20,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                SizedBox(height: 30),
+                if (_isConfirming)
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isConfirming = false;
+                        _pinController.clear();
+                        _confirmPinController.clear();
+                      });
+                    },
+                    child: Text(
+                      '다시 입력',
+                      style: TextStyle(color: Colors.teal),
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.teal),
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.grey[850],
-                  ),
-                ),
-              ),
-              SizedBox(height: 30),
-              if (_isConfirming)
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _isConfirming = false;
-                      _pinController.clear();
-                      _confirmPinController.clear();
-                    });
-                  },
-                  child: Text(
-                    '다시 입력',
-                    style: TextStyle(color: Colors.teal),
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -424,63 +430,69 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.lock_outline,
-                size: 80,
-                color: Colors.teal,
-              ),
-              SizedBox(height: 30),
-              Text(
-                'PIN 번호를 입력하세요',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  size: 80,
+                  color: Colors.teal,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 40),
-              Pinput(
-                controller: _pinController,
-                length: 4,
-                obscureText: true,
-                obscuringCharacter: '●',
-                onCompleted: _onPinCompleted,
-                defaultPinTheme: PinTheme(
-                  width: 60,
-                  height: 60,
-                  textStyle: TextStyle(
+                SizedBox(height: 30),
+                Text(
+                  'PIN 번호를 입력하세요',
+                  style: TextStyle(
                     fontSize: 20,
+                    fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    fontWeight: FontWeight.w600,
                   ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey[700]!),
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.grey[850],
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 40),
+                Center(
+                  child: Pinput(
+                    controller: _pinController,
+                    length: 4,
+                    obscureText: true,
+                    obscuringCharacter: '●',
+                    onCompleted: _onPinCompleted,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    defaultPinTheme: PinTheme(
+                      width: 60,
+                      height: 60,
+                      textStyle: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[700]!),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey[850],
+                      ),
+                    ),
+                    focusedPinTheme: PinTheme(
+                      width: 60,
+                      height: 60,
+                      textStyle: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.teal),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey[850],
+                      ),
+                    ),
                   ),
                 ),
-                focusedPinTheme: PinTheme(
-                  width: 60,
-                  height: 60,
-                  textStyle: TextStyle(
-                    fontSize: 20,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.teal),
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.grey[850],
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -525,6 +537,7 @@ class CategoryListScreen extends StatefulWidget {
 
 class _CategoryListScreenState extends State<CategoryListScreen> {
   List<Category> categories = [];
+  bool _isEditMode = false;
 
   @override
   void initState() {
@@ -549,12 +562,53 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       appBar: AppBar(
         title: Text('안전한 메모장'),
         actions: [
-          IconButton(
-            icon: Icon(Icons.settings),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => SettingsScreen()),
-            ),
+          PopupMenuButton(
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'add_category',
+                child: Row(
+                  children: [
+                    Icon(Icons.add, color: Colors.teal),
+                    SizedBox(width: 8),
+                    Text('카테고리 추가'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'edit_mode',
+                child: Row(
+                  children: [
+                    Icon(_isEditMode ? Icons.check : Icons.edit, color: Colors.teal),
+                    SizedBox(width: 8),
+                    Text(_isEditMode ? '편집 완료' : '순서 편집'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: Colors.teal),
+                    SizedBox(width: 8),
+                    Text('설정'),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 'add_category') {
+                _addCategory();
+              } else if (value == 'edit_mode') {
+                setState(() {
+                  _isEditMode = !_isEditMode;
+                });
+              } else if (value == 'settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SettingsScreen()),
+                );
+              }
+            },
           ),
         ],
       ),
@@ -562,82 +616,178 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
           ? Center(
               child: CircularProgressIndicator(),
             )
-          : ListView.builder(
-              padding: EdgeInsets.all(16),
-              itemCount: categories.length,
-              itemBuilder: (context, index) {
-                final category = categories[index];
-                return Card(
-                  margin: EdgeInsets.only(bottom: 12),
-                  child: ExpandablePanel(
-                    header: ListTile(
-                      leading: Icon(
-                        _getIconData(category.icon),
-                        color: Colors.teal,
-                      ),
-                      title: Text(
-                        category.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '${category.memos.length}개의 메모',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                      trailing: IconButton(
-                        icon: Icon(Icons.add, color: Colors.teal),
-                        onPressed: () => _addMemo(category),
-                      ),
-                    ),
-                    collapsed: Container(),
-                    expanded: Column(
-                      children: category.memos.map((memo) {
-                        return ListTile(
-                          leading: Icon(Icons.note, color: Colors.teal, size: 20),
-                          title: Text(
-                            memo.title.isEmpty ? '제목 없음' : memo.title,
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          subtitle: Text(
-                            memo.content.length > 50
-                                ? '${memo.content.substring(0, 50)}...'
-                                : memo.content,
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                          trailing: PopupMenuButton(
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'edit',
-                                child: Text('수정'),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Text('삭제'),
-                              ),
-                            ],
-                            onSelected: (value) {
-                              if (value == 'edit') {
-                                _editMemo(category, memo);
-                              } else if (value == 'delete') {
-                                _deleteMemo(category, memo);
-                              }
-                            },
-                          ),
-                          onTap: () => _viewMemo(category, memo),
-                        );
-                      }).toList(),
-                    ),
+          : _isEditMode
+              ? _buildReorderableList()
+              : _buildNormalList(),
+    );
+  }
+
+  Widget _buildNormalList() {
+    return ListView.builder(
+      padding: EdgeInsets.all(16),
+      itemCount: categories.length,
+      itemBuilder: (context, index) {
+        final category = categories[index];
+        return Card(
+          margin: EdgeInsets.only(bottom: 12),
+          child: ExpandablePanel(
+            header: ListTile(
+              leading: Icon(
+                _getIconData(category.icon),
+                color: Colors.teal,
+              ),
+              title: Text(
+                category.name,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              subtitle: Text(
+                '${category.memos.length}개의 메모',
+                style: TextStyle(color: Colors.white70),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.add, color: Colors.teal),
+                    onPressed: () => _addMemo(category),
+                    tooltip: '메모 추가',
                   ),
-                );
-              },
+                  PopupMenuButton(
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Text('이름 수정'),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text('삭제'),
+                      ),
+                    ],
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        _editCategory(category);
+                      } else if (value == 'delete') {
+                        _deleteCategory(category);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addCategory,
-        child: Icon(Icons.add),
-        tooltip: '새 카테고리 추가',
-      ),
+            collapsed: Container(),
+            expanded: _buildMemoList(category),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildReorderableList() {
+    return ReorderableListView.builder(
+      padding: EdgeInsets.all(16),
+      itemCount: categories.length,
+      onReorder: (oldIndex, newIndex) {
+        setState(() {
+          if (newIndex > oldIndex) {
+            newIndex -= 1;
+          }
+          final item = categories.removeAt(oldIndex);
+          categories.insert(newIndex, item);
+        });
+        _saveCategories();
+      },
+      itemBuilder: (context, index) {
+        final category = categories[index];
+        return Card(
+          key: ValueKey(category.id),
+          margin: EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            leading: Icon(
+              _getIconData(category.icon),
+              color: Colors.teal,
+            ),
+            title: Text(
+              category.name,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            subtitle: Text(
+              '${category.memos.length}개의 메모',
+              style: TextStyle(color: Colors.white70),
+            ),
+            trailing: Icon(
+              Icons.drag_handle,
+              color: Colors.white70,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMemoList(Category category) {
+    return ReorderableListView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: category.memos.length,
+      onReorder: (oldIndex, newIndex) {
+        setState(() {
+          if (newIndex > oldIndex) {
+            newIndex -= 1;
+          }
+          final item = category.memos.removeAt(oldIndex);
+          category.memos.insert(newIndex, item);
+        });
+        _saveCategories();
+      },
+      itemBuilder: (context, memoIndex) {
+        final memo = category.memos[memoIndex];
+        return ListTile(
+          key: ValueKey(memo.id),
+          leading: Icon(Icons.note, color: Colors.teal, size: 20),
+          title: Text(
+            memo.title.isEmpty ? '제목 없음' : memo.title,
+            style: TextStyle(color: Colors.white),
+          ),
+          subtitle: Text(
+            memo.content.length > 50
+                ? '${memo.content.substring(0, 50)}...'
+                : memo.content,
+            style: TextStyle(color: Colors.white70),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PopupMenuButton(
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Text('수정'),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text('삭제'),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    _editMemo(category, memo);
+                  } else if (value == 'delete') {
+                    _deleteMemo(category, memo);
+                  }
+                },
+              ),
+              Icon(Icons.drag_handle, color: Colors.white54, size: 16),
+            ],
+          ),
+          onTap: () => _viewMemo(category, memo),
+        );
+      },
     );
   }
 
@@ -675,6 +825,59 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
           });
           _saveCategories();
         },
+      ),
+    );
+  }
+
+  void _editCategory(Category category) {
+    showDialog(
+      context: context,
+      builder: (context) => EditCategoryDialog(
+        category: category,
+        onEdit: (name, icon) {
+          setState(() {
+            category.name = name;
+            category.icon = icon;
+          });
+          _saveCategories();
+        },
+      ),
+    );
+  }
+
+  void _deleteCategory(Category category) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: Text('카테고리 삭제', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('이 카테고리를 삭제하시겠습니까?', style: TextStyle(color: Colors.white70)),
+            SizedBox(height: 8),
+            Text('카테고리: ${category.name}', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            if (category.memos.isNotEmpty)
+              Text('${category.memos.length}개의 메모도 함께 삭제됩니다.', style: TextStyle(color: Colors.red)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                categories.remove(category);
+              });
+              _saveCategories();
+              Navigator.pop(context);
+            },
+            child: Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
@@ -1025,63 +1228,69 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
       appBar: AppBar(
         title: Text('PIN 변경'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.lock_reset,
-              size: 80,
-              color: Colors.teal,
-            ),
-            SizedBox(height: 30),
-            Text(
-              _getStepTitle(),
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.lock_reset,
+                size: 80,
+                color: Colors.teal,
               ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 40),
-            Pinput(
-              controller: _getCurrentController(),
-              length: 4,
-              obscureText: true,
-              obscuringCharacter: '●',
-              onCompleted: _onPinCompleted,
-              defaultPinTheme: PinTheme(
-                width: 60,
-                height: 60,
-                textStyle: TextStyle(
+              SizedBox(height: 30),
+              Text(
+                _getStepTitle(),
+                style: TextStyle(
                   fontSize: 20,
+                  fontWeight: FontWeight.bold,
                   color: Colors.white,
-                  fontWeight: FontWeight.w600,
                 ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[700]!),
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[850],
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 40),
+              Center(
+                child: Pinput(
+                  controller: _getCurrentController(),
+                  length: 4,
+                  obscureText: true,
+                  obscuringCharacter: '●',
+                  onCompleted: _onPinCompleted,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  defaultPinTheme: PinTheme(
+                    width: 60,
+                    height: 60,
+                    textStyle: TextStyle(
+                      fontSize: 20,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[700]!),
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.grey[850],
+                    ),
+                  ),
+                  focusedPinTheme: PinTheme(
+                    width: 60,
+                    height: 60,
+                    textStyle: TextStyle(
+                      fontSize: 20,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.teal),
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.grey[850],
+                    ),
+                  ),
                 ),
               ),
-              focusedPinTheme: PinTheme(
-                width: 60,
-                height: 60,
-                textStyle: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.teal),
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[850],
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1287,6 +1496,121 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
             }
           },
           child: Text('추가', style: TextStyle(color: Colors.teal)),
+        ),
+      ],
+    );
+  }
+}
+
+// 카테고리 수정 다이얼로그
+class EditCategoryDialog extends StatefulWidget {
+  final Category category;
+  final Function(String name, String icon) onEdit;
+
+  EditCategoryDialog({required this.category, required this.onEdit});
+
+  @override
+  _EditCategoryDialogState createState() => _EditCategoryDialogState();
+}
+
+class _EditCategoryDialogState extends State<EditCategoryDialog> {
+  late TextEditingController _nameController;
+  late String _selectedIcon;
+
+  final List<Map<String, dynamic>> _icons = [
+    {'name': 'folder', 'icon': Icons.folder},
+    {'name': 'business', 'icon': Icons.business},
+    {'name': 'shopping', 'icon': Icons.shopping_cart},
+    {'name': 'person', 'icon': Icons.person},
+    {'name': 'work', 'icon': Icons.work},
+    {'name': 'home', 'icon': Icons.home},
+    {'name': 'travel', 'icon': Icons.flight},
+    {'name': 'school', 'icon': Icons.school},
+    {'name': 'health', 'icon': Icons.local_hospital},
+    {'name': 'food', 'icon': Icons.restaurant},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.category.name);
+    _selectedIcon = widget.category.icon;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.grey[850],
+      title: Text('카테고리 수정', style: TextStyle(color: Colors.white)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            style: TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: '카테고리 이름',
+              labelStyle: TextStyle(color: Colors.white70),
+              border: OutlineInputBorder(),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.teal),
+              ),
+            ),
+          ),
+          SizedBox(height: 16),
+          Text('아이콘 선택', style: TextStyle(color: Colors.white)),
+          SizedBox(height: 8),
+          Container(
+            height: 120,
+            child: GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 5,
+                childAspectRatio: 1,
+              ),
+              itemCount: _icons.length,
+              itemBuilder: (context, index) {
+                final iconData = _icons[index];
+                final isSelected = _selectedIcon == iconData['name'];
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedIcon = iconData['name'];
+                    });
+                  },
+                  child: Container(
+                    margin: EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: isSelected ? Colors.teal : Colors.grey[700]!,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      iconData['icon'],
+                      color: isSelected ? Colors.teal : Colors.white70,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('취소'),
+        ),
+        TextButton(
+          onPressed: () {
+            final name = _nameController.text.trim();
+            if (name.isNotEmpty) {
+              widget.onEdit(name, _selectedIcon);
+              Navigator.pop(context);
+            }
+          },
+          child: Text('수정', style: TextStyle(color: Colors.teal)),
         ),
       ],
     );
