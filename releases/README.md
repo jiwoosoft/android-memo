@@ -7,12 +7,17 @@
 - **파일 크기**: 57.3MB
 - **패키지명**: `com.jiwoosoft.secure_memo`
 
-**[⬇️ APK 다운로드](./secure-memo-v1.0.0.apk)**
+**[⬇️ APK 다운로드 (Google Drive)](https://drive.google.com/file/d/YOUR_GOOGLE_DRIVE_FILE_ID/view?usp=sharing)**
+
+> 📝 **Google Drive 다운로드 방법**:
+> 1. 위 링크 클릭
+> 2. Google Drive 페이지에서 우상단 다운로드 버튼 클릭
+> 3. APK 파일 다운로드 완료
 
 ## 🆕 v1.0.0 주요 기능
 
 ### 🔐 보안 기능
-- **6자리 PIN 코드** 보안 인증
+- **4자리 PIN 코드** 보안 인증
 - **암호화 저장**: 모든 메모 데이터 암호화
 - **자동 잠금**: 앱 종료 시 자동 PIN 재인증
 
@@ -48,7 +53,7 @@
    - 설치 진행
 
 4. **첫 실행**
-   - 6자리 PIN 코드 설정
+   - 4자리 PIN 코드 설정
    - 메모 작성 시작!
 
 ## ⚠️ 주의사항

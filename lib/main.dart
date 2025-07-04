@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:pinput/pinput.dart';
 import 'package:expandable/expandable.dart';
+import 'security_service.dart';
 
 void main() {
   runApp(MyApp());
@@ -118,19 +119,85 @@ class DataService {
 
   static Future<List<Category>> getCategories() async {
     final prefs = await SharedPreferences.getInstance();
-    final categoriesJson = prefs.getString(_categoriesKey);
-    if (categoriesJson == null) {
+    final encryptedData = prefs.getString(_categoriesKey);
+    if (encryptedData == null) {
       return _getDefaultCategories();
     }
     
-    final List<dynamic> decoded = jsonDecode(categoriesJson);
-    return decoded.map((json) => Category.fromJson(json)).toList();
+    // 보안 강화: 디버깅 모드 감지
+    if (SecurityService.isDebuggingMode()) {
+      print('⚠️ 디버깅 모드에서 실행 중입니다.');
+    }
+    
+    try {
+      // 저장된 PIN 해시 가져오기
+      final savedPinHash = prefs.getString(_pinKey);
+      if (savedPinHash == null) {
+        return _getDefaultCategories();
+      }
+      
+      // 현재 세션에서 PIN을 가져올 수 없으므로 기본 복호화 시도
+      // 실제로는 PIN 입력 후 세션에 저장된 PIN 사용
+      final currentPin = await _getCurrentSessionPin();
+      if (currentPin == null) {
+        return _getDefaultCategories();
+      }
+      
+      // 데이터 복호화
+      final decryptedJson = SecurityService.decryptMemoData(encryptedData, currentPin);
+      
+      // 복호화 실패 시 기본 데이터 반환
+      if (decryptedJson.isEmpty || !SecurityService.verifyDataIntegrity(decryptedJson)) {
+        return _getDefaultCategories();
+      }
+      
+      final List<dynamic> decoded = jsonDecode(decryptedJson);
+      return decoded.map((json) => Category.fromJson(json)).toList();
+    } catch (e) {
+      print('카테고리 로드 오류: $e');
+      return _getDefaultCategories();
+    }
   }
 
   static Future<void> saveCategories(List<Category> categories) async {
     final prefs = await SharedPreferences.getInstance();
-    final categoriesJson = jsonEncode(categories.map((c) => c.toJson()).toList());
-    await prefs.setString(_categoriesKey, categoriesJson);
+    
+    try {
+      // 현재 세션의 PIN 가져오기
+      final currentPin = await _getCurrentSessionPin();
+      if (currentPin == null) {
+        print('PIN이 없어서 저장할 수 없습니다.');
+        return;
+      }
+      
+      // JSON 데이터 생성
+      final categoriesJson = jsonEncode(categories.map((c) => c.toJson()).toList());
+      
+      // 데이터 암호화
+      final encryptedData = SecurityService.encryptMemoData(categoriesJson, currentPin);
+      
+      // 암호화된 데이터 저장
+      await prefs.setString(_categoriesKey, encryptedData);
+      
+      print('카테고리 데이터가 암호화되어 저장되었습니다.');
+    } catch (e) {
+      print('카테고리 저장 오류: $e');
+    }
+  }
+  
+  // 현재 세션의 PIN을 관리하는 부분 (보안상 메모리에 임시 저장)
+  static String? _sessionPin;
+  
+  static Future<String?> _getCurrentSessionPin() async {
+    return _sessionPin;
+  }
+  
+  static void setSessionPin(String pin) {
+    _sessionPin = pin;
+  }
+  
+  static void clearSessionPin() {
+    _sessionPin = null;
   }
 
   static List<Category> _getDefaultCategories() {
@@ -158,7 +225,38 @@ class DataService {
 }
 
 // 메인 앱 클래스
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    // 앱 생명주기 관찰자 등록
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    // 앱 생명주기 관찰자 제거
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // 보안 강화: 앱이 백그라운드로 갈 때 세션 PIN 클리어
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      print('앱이 백그라운드로 이동 - 세션 PIN 클리어');
+      DataService.clearSessionPin();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -502,6 +600,9 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onPinCompleted(String pin) async {
     final isValid = await DataService.verifyPin(pin);
     if (isValid) {
+      // 보안 강화: PIN 인증 성공 후 세션에 PIN 저장
+      DataService.setSessionPin(pin);
+      
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => CategoryListScreen()),
       );
@@ -1162,7 +1263,13 @@ class SettingsScreen extends StatelessWidget {
             SizedBox(height: 8),
             Text('PIN 기반 보안 메모장 앱', style: TextStyle(color: Colors.white70)),
             SizedBox(height: 8),
+            Text('개발자: Powered by HaneulCCM', style: TextStyle(color: Colors.white70)),
+            SizedBox(height: 8),
             Text('개발자: jiwoosoft', style: TextStyle(color: Colors.white70)),
+            SizedBox(height: 8),
+            Text('YouTube: @haneulccm', style: TextStyle(color: Colors.white70)),
+            SizedBox(height: 8),
+            Text('E-mail: webmaster@jiwoosoft.com', style: TextStyle(color: Colors.white70)),
             SizedBox(height: 8),
             Text('Flutter로 개발되었습니다', style: TextStyle(color: Colors.white70)),
           ],
@@ -1322,6 +1429,9 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
       case 0:
         final isValid = await DataService.verifyPin(pin);
         if (isValid) {
+          // 보안 강화: PIN 인증 성공 후 세션에 PIN 저장 (PIN 변경 시에도 필요)
+          DataService.setSessionPin(pin);
+          
           setState(() {
             _step = 1;
           });
@@ -1339,6 +1449,8 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
       case 2:
         if (_newPin == pin) {
           await DataService.savePin(pin);
+          // 보안 강화: 새 PIN을 세션에 저장
+          DataService.setSessionPin(pin);
           _showSuccessDialog();
         } else {
           _showErrorDialog('새 PIN이 일치하지 않습니다.');

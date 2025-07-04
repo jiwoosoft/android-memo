@@ -14,7 +14,11 @@
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
         android:supportsRtl="false"
-        android:extractNativeLibs="false">
+        android:extractNativeLibs="false"
+        android:allowClearUserData="true"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:networkSecurityConfig="@xml/network_security_config">
         
         <!-- 듀얼 메신저 기능 비활성화 -->
         <meta-data
