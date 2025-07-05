@@ -10,7 +10,7 @@ class UpdateService {
   static const String _apiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases/latest';
   
   // 기본 다운로드 URL (최신 APK가 있는 Google Drive 링크)
-  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1wn4lCWNNk8pNQJDQG-fLuxTNjizt1Imm/view?usp=drivesdk';
+  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1p2_AzvgqgYLH2PKm1s8jHhRY4QXyfPLQ/view?usp=drivesdk';
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
@@ -34,7 +34,7 @@ class UpdateService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final latestVersion = data['tag_name'].toString().replaceAll('v', '');
+        String latestVersion = data['tag_name'].toString().replaceAll('v', '');
         
         print('최신 버전: $latestVersion');
         
@@ -59,7 +59,28 @@ class UpdateService {
           downloadUrl = driveUrlMatch.group(0)!;
         }
 
-        final hasUpdate = _compareVersions(currentVersion, latestVersion) < 0;
+        // 강제 업데이트 체크: 현재 버전이 2.0.2보다 낮으면 무조건 업데이트 필요
+        const String minimumVersion = '2.0.2';
+        bool hasUpdate = _compareVersions(currentVersion, latestVersion) < 0;
+        
+        // 현재 버전이 2.0.2보다 낮으면 강제 업데이트
+        if (_compareVersions(currentVersion, minimumVersion) < 0) {
+          hasUpdate = true;
+          latestVersion = minimumVersion;
+          downloadUrl = _defaultDownloadUrl;
+          
+          print('강제 업데이트 필요: $currentVersion < $minimumVersion');
+          return UpdateCheckResult(
+            currentVersion: currentVersion,
+            latestVersion: minimumVersion,
+            hasUpdate: true,
+            releaseInfo: ReleaseInfo(
+              version: minimumVersion,
+              body: '🔐 MAJOR 업데이트 - 지문인증 시스템 추가!\n\n주요 변경사항:\n- 🔒 지문인증 시스템 추가 (PIN + 생체인증)\n- ⚙️ 인증 방법 설정 (PIN ↔ 지문인증 전환)\n- 🔄 자동 생체인증 (앱 시작 시)\n- 🛡️ 보안 강화 (Flutter Secure Storage)\n- 🎨 새로운 인증 UI\n\n⚠️ Major 업데이트로 새로설치 권장',
+              downloadUrl: _defaultDownloadUrl,
+            ),
+          );
+        }
         
         print('업데이트 필요: $hasUpdate');
         print('다운로드 URL: $downloadUrl');
