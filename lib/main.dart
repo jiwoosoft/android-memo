@@ -1470,6 +1470,14 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
               ? Colors.white  // 라이트 모드: 순백색 (카테고리)
               : Colors.grey[850],  // 다크 모드: 진한 회색 (카테고리)
           child: ExpandablePanel(
+            theme: ExpandableThemeData(
+              iconColor: Theme.of(context).brightness == Brightness.light 
+                  ? Colors.black54 
+                  : Colors.white70,
+              tapHeaderToExpand: true,
+              tapBodyToExpand: false,
+              tapBodyToCollapse: false,
+            ),
             header: ListTile(
               leading: Icon(
                 _getIconData(category.icon),
