@@ -4,7 +4,7 @@
 
 [📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1X7izR8h76moM4XzTQ47rEkTeppO2tXaR/view?usp=drivesdk)
 
-### 🚀 최신 버전 (v2.0.5) - PIN 설정 버그 긴급 수정
+### 🚀 최신 버전 (v2.0.6) - PIN 설정 버그 긴급 수정
 - **버전**: v2.0.5+47
 - **크기**: 64.0MB
 - **최종 업데이트**: 2025.07.06

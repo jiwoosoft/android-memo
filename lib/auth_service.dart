@@ -45,10 +45,27 @@ class AuthService {
 
   /// PIN 저장 (해시화하여 저장)
   static Future<void> savePin(String pin) async {
-    final prefs = await SharedPreferences.getInstance();
-    final hashedPin = sha256.convert(utf8.encode(pin)).toString();
-    await prefs.setString(_pinKey, hashedPin);
-    print('PIN 저장 완료');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hashedPin = sha256.convert(utf8.encode(pin)).toString();
+      final success = await prefs.setString(_pinKey, hashedPin);
+      
+      print('🔐 PIN 저장 시도');
+      print('📝 원본 PIN: $pin');
+      print('🔒 해시된 PIN: $hashedPin');
+      print('💾 저장 성공: $success');
+      
+      // 저장 확인
+      final verification = prefs.getString(_pinKey);
+      print('✅ 저장 확인: ${verification != null ? '성공' : '실패'}');
+      
+      if (!success || verification == null) {
+        throw Exception('PIN 저장에 실패했습니다');
+      }
+    } catch (e) {
+      print('❌ PIN 저장 중 오류: $e');
+      rethrow;
+    }
   }
 
   /// PIN 검증
@@ -56,12 +73,25 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final storedHashedPin = prefs.getString(_pinKey);
-      if (storedHashedPin == null) return false;
+      
+      print('🔍 PIN 검증 시작');
+      print('📝 입력된 PIN: $pin');
+      print('🔒 저장된 해시: ${storedHashedPin ?? 'null'}');
+      
+      if (storedHashedPin == null) {
+        print('❌ 저장된 PIN이 없습니다');
+        return false;
+      }
       
       final hashedPin = sha256.convert(utf8.encode(pin)).toString();
-      return storedHashedPin == hashedPin;
+      print('🔒 입력 PIN 해시: $hashedPin');
+      
+      final isMatch = storedHashedPin == hashedPin;
+      print('✅ PIN 일치 여부: $isMatch');
+      
+      return isMatch;
     } catch (e) {
-      print('PIN 검증 중 오류: $e');
+      print('❌ PIN 검증 중 오류: $e');
       return false;
     }
   }
@@ -102,11 +132,18 @@ class AuthService {
   /// 생체인증 실행
   static Future<bool> authenticateWithBiometric() async {
     try {
+      print('👆 생체인증 시작');
+      
       final bool isAvailable = await isBiometricAvailable();
+      print('📱 생체인증 사용 가능: $isAvailable');
+      
       if (!isAvailable) {
-        print('생체인증을 사용할 수 없습니다.');
+        print('❌ 생체인증을 사용할 수 없습니다.');
         return false;
       }
+
+      final availableBiometrics = await getAvailableBiometrics();
+      print('🔍 사용 가능한 생체인증: ${availableBiometrics.map((e) => getBiometricTypeDisplayName(e)).join(', ')}');
 
       final bool didAuthenticate = await _localAuth.authenticate(
         localizedReason: '앱에 접근하려면 생체인증을 완료해주세요.',
@@ -116,10 +153,10 @@ class AuthService {
         ),
       );
 
-      print('생체인증 결과: ${didAuthenticate ? '성공' : '실패'}');
+      print('✅ 생체인증 결과: ${didAuthenticate ? '성공' : '실패'}');
       return didAuthenticate;
     } catch (e) {
-      print('생체인증 중 오류: $e');
+      print('❌ 생체인증 중 오류: $e');
       return false;
     }
   }

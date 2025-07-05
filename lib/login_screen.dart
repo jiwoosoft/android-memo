@@ -172,6 +172,69 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     );
   }
 
+  /// 인증 설정 초기화 확인 다이얼로그
+  void _showResetDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('⚠️ 인증 설정 초기화'),
+          content: const Text(
+            '인증 설정을 초기화하면 모든 메모 데이터가 삭제됩니다.\n\n'
+            '로그인 문제가 해결되지 않을 때만 사용하세요.\n\n'
+            '정말로 초기화하시겠습니까?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _resetAuthSettings();
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('초기화'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 인증 설정 초기화 실행
+  Future<void> _resetAuthSettings() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // 인증 설정 초기화
+      await AuthService.resetAuthSettings();
+      
+      // 앱 데이터 초기화
+      await DataService.clearAllData();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ 인증 설정이 초기화되었습니다. 새로운 PIN을 설정해주세요.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      // 인증 설정 화면으로 이동
+      Navigator.of(context).pushReplacementNamed('/auth-setup');
+    } catch (e) {
+      _showErrorMessage('초기화 중 오류가 발생했습니다: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -241,6 +304,18 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                     ),
                   ),
                 ],
+                
+                const SizedBox(height: 24),
+                
+                // 인증 설정 초기화 버튼
+                TextButton.icon(
+                  onPressed: _isLoading ? null : _showResetDialog,
+                  icon: const Icon(Icons.refresh, color: Colors.red),
+                  label: const Text(
+                    '인증 설정 초기화',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
               ],
             ),
           ),
