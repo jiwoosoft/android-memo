@@ -10,7 +10,7 @@ class UpdateService {
   static const String _apiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases/latest';
   
   // 기본 다운로드 URL (최신 APK가 있는 Google Drive 링크)
-  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1p2_AzvgqgYLH2PKm1s8jHhRY4QXyfPLQ/view?usp=drivesdk';
+  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1WYdkZUdzFrglY3-SdwI3TLdFiNr5XQNb/view?usp=drivesdk';
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
@@ -59,8 +59,8 @@ class UpdateService {
           downloadUrl = driveUrlMatch.group(0)!;
         }
 
-        // 강제 업데이트 체크: 현재 버전이 2.0.2보다 낮으면 무조건 업데이트 필요
-        const String minimumVersion = '2.0.2';
+        // 강제 업데이트 체크: 현재 버전이 2.0.3보다 낮으면 무조건 업데이트 필요
+        const String minimumVersion = '2.0.3';
         bool hasUpdate = _compareVersions(currentVersion, latestVersion) < 0;
         
         // 현재 버전이 2.0.2보다 낮으면 강제 업데이트
@@ -102,10 +102,10 @@ class UpdateService {
       // API 호출 실패 시 기본 다운로드 URL 사용
       return UpdateCheckResult(
         currentVersion: currentVersion,
-        latestVersion: '2.0.2',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 수정)
+        latestVersion: '2.0.3',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 완전 수정)
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '2.0.2',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 수정)
+          version: '2.0.3',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 완전 수정)
           body: '🔐 MAJOR 업데이트 - 지문인증 시스템 추가!\n\n주요 변경사항:\n- 🔒 지문인증 시스템 추가 (PIN + 생체인증)\n- ⚙️ 인증 방법 설정 (PIN ↔ 지문인증 전환)\n- 🔄 자동 생체인증 (앱 시작 시)\n- 🛡️ 보안 강화 (Flutter Secure Storage)\n- 🎨 새로운 인증 UI\n\n⚠️ Major 업데이트로 새로설치 권장',
           downloadUrl: _defaultDownloadUrl,
         ),
@@ -115,10 +115,10 @@ class UpdateService {
       final packageInfo = await PackageInfo.fromPlatform();
       return UpdateCheckResult(
         currentVersion: packageInfo.version,
-        latestVersion: '2.0.2',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 수정)
+        latestVersion: '2.0.3',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 완전 수정)
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '2.0.2',
+          version: '2.0.3',
           body: '🔐 MAJOR 업데이트 - 지문인증 시스템 추가!\n\n주요 변경사항:\n- 🔒 지문인증 시스템 추가 (PIN + 생체인증)\n- ⚙️ 인증 방법 설정 (PIN ↔ 지문인증 전환)\n- 🔄 자동 생체인증 (앱 시작 시)\n- 🛡️ 보안 강화 (Flutter Secure Storage)\n- 🎨 새로운 인증 UI\n\n⚠️ Major 업데이트로 새로설치 권장',
           downloadUrl: _defaultDownloadUrl,
         ),

@@ -15,6 +15,7 @@ class AuthSetupScreen extends StatefulWidget {
 
 class _AuthSetupScreenState extends State<AuthSetupScreen> {
   final PageController _pageController = PageController();
+  final TextEditingController _pinController = TextEditingController();
   int _currentPage = 0;
   String _pin = '';
   String _confirmPin = '';
@@ -206,6 +207,8 @@ class _AuthSetupScreenState extends State<AuthSetupScreen> {
           ),
           const SizedBox(height: 48),
           Pinput(
+            key: ValueKey(isConfirmMode ? 'confirm' : 'initial'),
+            controller: _pinController,
             length: 4,
             obscureText: true,
             autofocus: true,
@@ -249,10 +252,18 @@ class _AuthSetupScreenState extends State<AuthSetupScreen> {
                     _pin = '';
                     _confirmPin = '';
                   });
+                  _pinController.clear();
                 }
               } else {
                 setState(() {
                   _pin = pin;
+                });
+                _pinController.clear();
+                // 잠시 후 화면 업데이트를 위해 약간의 지연
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  if (mounted) {
+                    setState(() {});
+                  }
                 });
               }
             },
@@ -398,6 +409,7 @@ class _AuthSetupScreenState extends State<AuthSetupScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _pinController.dispose();
     super.dispose();
   }
 } 
