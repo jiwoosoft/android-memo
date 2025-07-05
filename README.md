@@ -1,9 +1,9 @@
-# 🔐 안전한 메모장 앱 (Secure Memo App)
+# 안전한 메모장 앱 🔒
 
-## 📲 APK 다운로드
+## 📱 다운로드
+**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1yHKWqK5GxpqnsG0EHA_MmEWik2oJuKF8/view?usp=drivesdk)**
 
-### 🚀 최신 버전 (v1.0.11)
-**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/15thfBZRzv48Sx8Wd2vtDhM13eRcZcoRc/view?usp=drivesdk)** | **[📋 릴리즈 노트](https://github.com/jiwoosoft/android-memo/releases)**
+**현재 버전**: v1.0.12+13
 
 - **파일 크기**: 62.9MB
 - **Android 요구사항**: 5.0+ (API 21+)
