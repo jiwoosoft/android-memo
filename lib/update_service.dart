@@ -81,11 +81,11 @@ class UpdateService {
       // API 호출 실패 시 기본 다운로드 URL 사용
       return UpdateCheckResult(
         currentVersion: currentVersion,
-        latestVersion: '1.0.31',  // 최신 버전으로 업데이트
+        latestVersion: '1.0.32',  // v1.0.28 사용자를 위한 올바른 최신 버전
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '1.0.31',  // 최신 버전으로 업데이트
-          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 완전 수정\n- URL 실행 안정성 대폭 개선\n- 다중 브라우저 지원으로 호환성 향상',
+          version: '1.0.32',  // v1.0.28 사용자를 위한 올바른 최신 버전
+          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 완전 수정\n- URL 실행 안정성 대폭 개선\n- 다중 브라우저 지원으로 호환성 향상\n- Google Drive 링크 오류 수정',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
@@ -94,11 +94,11 @@ class UpdateService {
       final packageInfo = await PackageInfo.fromPlatform();
       return UpdateCheckResult(
         currentVersion: packageInfo.version,
-        latestVersion: '1.0.31',  // 최신 버전으로 업데이트
+        latestVersion: '1.0.32',  // v1.0.28 사용자를 위한 올바른 최신 버전
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '1.0.31',
-          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 완전 수정\n- URL 실행 안정성 대폭 개선\n- 다중 브라우저 지원으로 호환성 향상',
+          version: '1.0.32',
+          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 완전 수정\n- URL 실행 안정성 대폭 개선\n- 다중 브라우저 지원으로 호환성 향상\n- Google Drive 링크 오류 수정',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
