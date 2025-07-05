@@ -2126,33 +2126,216 @@ class _SettingsScreenState extends State<SettingsScreen> {
   PackageInfo? packageInfo;
   bool _isThemeDialogOpen = false;
   bool _isFontSizeDialogOpen = false;
-  AppTheme? _currentTheme;
-  FontSize? _currentFontSize;
 
   @override
   void initState() {
     super.initState();
     _loadPackageInfo();
-    _initializeSettings();
   }
 
-  void _initializeSettings() {
-    final settings = Provider.of<AppSettings>(context, listen: false);
-    setState(() {
-      _currentTheme = settings.currentTheme;
-      _currentFontSize = settings.currentFontSize;
-    });
-  }
-  
   Future<void> _loadPackageInfo() async {
-    final info = await PackageInfo.fromPlatform();
-    if (mounted) {
-      setState(() {
-        packageInfo = info;
-      });
-    }
+    packageInfo = await PackageInfo.fromPlatform();
+    if (mounted) setState(() {});
   }
-  
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+    final subtitleColor = isDarkMode ? Colors.white70 : Colors.black54;
+    final backgroundColor = isDarkMode ? Colors.grey[850] : Colors.white;
+    final dividerColor = isDarkMode ? Colors.white24 : Colors.black12;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('설정'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: ListView(
+        children: [
+          ListTile(
+            leading: Icon(Icons.lock, color: Colors.teal),
+            title: Text('PIN 변경', style: TextStyle(color: textColor)),
+            subtitle: Text('보안을 위해 PIN을 변경하세요', style: TextStyle(color: subtitleColor)),
+            trailing: Icon(Icons.arrow_forward_ios, color: subtitleColor),
+            onTap: () => _showPinChangeDialog(context),
+          ),
+          Divider(color: dividerColor),
+          ListTile(
+            leading: Icon(Icons.palette, color: Colors.teal),
+            title: Text('테마 설정', style: TextStyle(color: textColor)),
+            subtitle: Text('다크 테마', style: TextStyle(color: subtitleColor)),
+            trailing: Icon(Icons.arrow_forward_ios, color: subtitleColor),
+            onTap: () => _showThemeDialog(context),
+          ),
+          Divider(color: dividerColor),
+          ListTile(
+            leading: Icon(Icons.text_fields, color: Colors.teal),
+            title: Text('폰트 크기', style: TextStyle(color: textColor)),
+            subtitle: Text('보통', style: TextStyle(color: subtitleColor)),
+            trailing: Icon(Icons.arrow_forward_ios, color: subtitleColor),
+            onTap: () => _showFontSizeDialog(context),
+          ),
+          Divider(color: dividerColor),
+          ListTile(
+            leading: Icon(Icons.info, color: Colors.teal),
+            title: Text('앱 정보', style: TextStyle(color: textColor)),
+            subtitle: Text(
+              packageInfo != null 
+                ? '버전 ${packageInfo!.version} (${packageInfo!.buildNumber})'
+                : '버전 정보 로딩 중...',
+              style: TextStyle(color: subtitleColor)
+            ),
+            trailing: Icon(Icons.arrow_forward_ios, color: subtitleColor),
+            onTap: () => _checkForUpdate(context),
+          ),
+          Divider(color: dividerColor),
+          ListTile(
+            leading: Icon(Icons.description, color: Colors.teal),
+            title: Text('라이선스', style: TextStyle(color: textColor)),
+            subtitle: Text('MIT 라이선스 및 오픈소스 정보', style: TextStyle(color: subtitleColor)),
+            trailing: Icon(Icons.arrow_forward_ios, color: subtitleColor),
+            onTap: () => _showLicenseDialog(context),
+          ),
+          Divider(color: dividerColor),
+          ListTile(
+            leading: Icon(Icons.logout, color: Colors.red),
+            title: Text('로그아웃', style: TextStyle(color: Colors.red)),
+            subtitle: Text('보안을 위해 로그아웃하고 다시 로그인하세요', style: TextStyle(color: subtitleColor)),
+            onTap: () => _showLogoutDialog(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showThemeDialog(BuildContext context) {
+    if (_isThemeDialogOpen) return;
+    _isThemeDialogOpen = true;
+
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+    final backgroundColor = isDarkMode ? Colors.grey[850] : Colors.white;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: backgroundColor,
+        title: Text('테마 설정', style: TextStyle(color: textColor)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: AppTheme.values.map((theme) {
+            return RadioListTile<AppTheme>(
+              title: Text(
+                _getThemeDisplayName(theme),
+                style: TextStyle(color: textColor),
+              ),
+              value: theme,
+              groupValue: Provider.of<AppSettings>(context).currentTheme,
+              onChanged: (AppTheme? value) {
+                if (value != null) {
+                  Provider.of<AppSettings>(context, listen: false).updateTheme(value);
+                  Navigator.of(context).pop();
+                }
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            child: Text('취소', style: TextStyle(color: Colors.teal)),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    ).then((_) => _isThemeDialogOpen = false);
+  }
+
+  void _showFontSizeDialog(BuildContext context) {
+    if (_isFontSizeDialogOpen) return;
+    _isFontSizeDialogOpen = true;
+
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+    final backgroundColor = isDarkMode ? Colors.grey[850] : Colors.white;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: backgroundColor,
+        title: Text('폰트 크기', style: TextStyle(color: textColor)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: FontSize.values.map((size) {
+            return RadioListTile<FontSize>(
+              title: Text(
+                _getFontSizeDisplayName(size),
+                style: TextStyle(color: textColor),
+              ),
+              value: size,
+              groupValue: Provider.of<AppSettings>(context).currentFontSize,
+              onChanged: (FontSize? value) {
+                if (value != null) {
+                  Provider.of<AppSettings>(context, listen: false).updateFontSize(value);
+                  Navigator.of(context).pop();
+                }
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            child: Text('취소', style: TextStyle(color: Colors.teal)),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    ).then((_) => _isFontSizeDialogOpen = false);
+  }
+
+  void _showPinChangeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => ChangePinScreen(),
+    );
+  }
+
+  void _showLicenseDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => LicenseScreen(),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: Text('로그아웃', style: TextStyle(color: Colors.white)),
+        content: Text('정말 로그아웃하시겠습니까?', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('취소'),
+          ),
+          TextButton(
+              onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+                (Route<dynamic> route) => false,
+              );
+            },
+            child: Text('로그아웃', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _getThemeDisplayName(AppTheme? theme) {
     switch (theme) {
       case AppTheme.system:
@@ -2165,7 +2348,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return '테마 로딩 중...';
     }
   }
-  
+
   String _getFontSizeDisplayName(FontSize? fontSize) {
     switch (fontSize) {
       case FontSize.small:
@@ -2179,354 +2362,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       default:
         return '폰트 크기 로딩 중...';
     }
-  }
-  
-  void _showThemeDialog(BuildContext context) {
-    if (_isThemeDialogOpen) return;
-    _isThemeDialogOpen = true;
-
-    AppTheme tempTheme = _currentTheme ?? AppTheme.system;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            backgroundColor: Colors.grey[850],
-            title: Text('테마 설정', style: TextStyle(color: Colors.white)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: AppTheme.values.map((theme) {
-                return RadioListTile<AppTheme>(
-                  title: Text(
-                    _getThemeDisplayName(theme),
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  value: theme,
-                  groupValue: tempTheme,
-                  activeColor: Colors.teal,
-                  onChanged: (value) {
-                    setDialogState(() {
-                      tempTheme = value!;
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  _isThemeDialogOpen = false;
-                  Navigator.pop(context);
-                },
-                child: Text('취소', style: TextStyle(color: Colors.grey)),
-              ),
-              TextButton(
-                onPressed: () async {
-                  final settings = Provider.of<AppSettings>(context, listen: false);
-                  settings.updateTheme(tempTheme);
-                  setState(() {
-                    _currentTheme = tempTheme;
-                  });
-                  _isThemeDialogOpen = false;
-                  Navigator.pop(context);
-                },
-                child: Text('적용', style: TextStyle(color: Colors.teal)),
-              ),
-            ],
-          );
-        },
-      ),
-    ).then((_) {
-      _isThemeDialogOpen = false;
-    });
-  }
-
-  void _showFontSizeDialog(BuildContext context) {
-    if (_isFontSizeDialogOpen) return;
-    _isFontSizeDialogOpen = true;
-
-    FontSize tempFontSize = _currentFontSize ?? FontSize.medium;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            backgroundColor: Colors.grey[850],
-            title: Text('폰트 크기 설정', style: TextStyle(color: Colors.white)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: FontSize.values.map((fontSize) {
-                return RadioListTile<FontSize>(
-                  title: Text(
-                    _getFontSizeDisplayName(fontSize),
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  value: fontSize,
-                  groupValue: tempFontSize,
-                  activeColor: Colors.teal,
-                  onChanged: (value) {
-                    setDialogState(() {
-                      tempFontSize = value!;
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  _isFontSizeDialogOpen = false;
-                  Navigator.pop(context);
-                },
-                child: Text('취소', style: TextStyle(color: Colors.grey)),
-              ),
-              TextButton(
-                onPressed: () async {
-                  final settings = Provider.of<AppSettings>(context, listen: false);
-                  settings.updateFontSize(tempFontSize);
-                  setState(() {
-                    _currentFontSize = tempFontSize;
-                  });
-                  _isFontSizeDialogOpen = false;
-                  Navigator.pop(context);
-                },
-                child: Text('적용', style: TextStyle(color: Colors.teal)),
-              ),
-            ],
-          );
-        },
-      ),
-    ).then((_) {
-      _isFontSizeDialogOpen = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('설정'),
-      ),
-      body: ListView(
-        children: [
-          ListTile(
-            leading: Icon(Icons.lock, color: Colors.teal),
-            title: Text('PIN 변경', style: TextStyle(color: Colors.white)),
-            subtitle: Text('보안을 위해 PIN을 변경하세요', style: TextStyle(color: Colors.white70)),
-            trailing: Icon(Icons.arrow_forward_ios, color: Colors.white70),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ChangePinScreen()),
-            ),
-          ),
-          Divider(color: Colors.grey[700]),
-          ListTile(
-            leading: Icon(Icons.palette, color: Colors.teal),
-            title: Text('테마 설정', style: TextStyle(color: Colors.white)),
-            subtitle: Text(_getThemeDisplayName(_currentTheme), style: TextStyle(color: Colors.white70)),
-            trailing: Icon(Icons.arrow_forward_ios, color: Colors.white70),
-            onTap: () => _showThemeDialog(context),
-          ),
-          Divider(color: Colors.grey[700]),
-          ListTile(
-            leading: Icon(Icons.text_fields, color: Colors.teal),
-            title: Text('폰트 크기', style: TextStyle(color: Colors.white)),
-            subtitle: Text(_getFontSizeDisplayName(_currentFontSize), style: TextStyle(color: Colors.white70)),
-            trailing: Icon(Icons.arrow_forward_ios, color: Colors.white70),
-            onTap: () => _showFontSizeDialog(context),
-          ),
-          Divider(color: Colors.grey[700]),
-          ListTile(
-            leading: Icon(Icons.info, color: Colors.teal),
-            title: Text('앱 정보', style: TextStyle(color: Colors.white)),
-            subtitle: Text(
-              packageInfo != null 
-                ? '버전 ${packageInfo!.version} (${packageInfo!.buildNumber})'
-                : '버전 정보 로딩 중...',
-              style: TextStyle(color: Colors.white70)
-            ),
-            trailing: Icon(Icons.arrow_forward_ios, color: Colors.white70),
-            onTap: () async {
-              try {
-                final result = await UpdateService.checkForUpdate();
-                if (result.hasUpdate && result.releaseInfo != null) {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      backgroundColor: Colors.grey[850],
-                      title: Text('업데이트 가능', style: TextStyle(color: Colors.white)),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '새로운 버전이 있습니다:',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            '현재 버전: ${result.currentVersion}',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                          Text(
-                            '최신 버전: ${result.latestVersion}',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                          if (result.releaseInfo?.downloadUrl != null) ...[
-                            SizedBox(height: 16),
-                            Text(
-                              '업데이트 내용:',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              result.releaseInfo!.body,
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                          ],
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text('나중에', style: TextStyle(color: Colors.grey)),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            if (result.releaseInfo?.downloadUrl != null) {
-                              final url = Uri.parse(result.releaseInfo!.downloadUrl!);
-                              if (await canLaunchUrl(url)) {
-                                await launchUrl(
-                                  url,
-                                  mode: LaunchMode.externalApplication,
-                                );
-                              }
-                            }
-                            Navigator.pop(context);
-                          },
-                          child: Text('업데이트', style: TextStyle(color: Colors.teal)),
-                        ),
-                      ],
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('현재 최신 버전입니다.'),
-                      backgroundColor: Colors.teal,
-                    ),
-                  );
-                }
-              } catch (e) {
-                print('업데이트 확인 오류: $e');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('업데이트 확인 중 오류가 발생했습니다.'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-          ),
-          Divider(color: Colors.grey[700]),
-          ListTile(
-            leading: Icon(Icons.article, color: Colors.teal),
-            title: Text('라이선스', style: TextStyle(color: Colors.white)),
-            subtitle: Text('MIT 라이선스 및 오픈소스 정보', style: TextStyle(color: Colors.white70)),
-            trailing: Icon(Icons.arrow_forward_ios, color: Colors.white70),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => LicenseScreen()),
-            ),
-          ),
-          Divider(color: Colors.grey[700]),
-          ListTile(
-            leading: Icon(Icons.logout, color: Colors.red),
-            title: Text('로그아웃', style: TextStyle(color: Colors.red)),
-            subtitle: Text('앱을 종료하고 다시 로그인하세요', style: TextStyle(color: Colors.white70)),
-            onTap: () => _logout(context),
-          ),
-        ],
-      ),
-      // 하단 카피라이트
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-          border: Border(top: BorderSide(color: Colors.grey[700]!)),
-        ),
-        child: Text(
-          'Copyright (c) 2025 jiwoosoft. Powered by HaneulCCM.',
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-
-  void _showAboutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[850],
-        title: Text('앱 정보', style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              packageInfo != null 
-                ? '안전한 메모장 v${packageInfo!.version}'
-                : '안전한 메모장',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
-            ),
-            if (packageInfo != null) ...[
-              SizedBox(height: 4),
-              Text('빌드 번호: ${packageInfo!.buildNumber}', style: TextStyle(color: Colors.white70, fontSize: 12)),
-              Text('패키지명: ${packageInfo!.packageName}', style: TextStyle(color: Colors.white70, fontSize: 12)),
-            ],
-            SizedBox(height: 16),
-            Text('4자리 PIN 기반 보안 메모장 앱', style: TextStyle(color: Colors.white70)),
-            SizedBox(height: 8),
-            Text('📱 주요 기능:', style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
-            Text('• 4자리 PIN 보안 인증', style: TextStyle(color: Colors.white70)),
-            Text('• 메모 데이터 암호화', style: TextStyle(color: Colors.white70)),
-            Text('• 카테고리별 메모 분류', style: TextStyle(color: Colors.white70)),
-            Text('• 갤럭시폰 최적화', style: TextStyle(color: Colors.white70)),
-            SizedBox(height: 16),
-            Text('👨‍💻 개발 정보:', style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
-            Text('Powered by HaneulCCM', style: TextStyle(color: Colors.white70)),
-            Text('Developer: jiwoosoft', style: TextStyle(color: Colors.white70)),
-            Text('YouTube: @haneulccm', style: TextStyle(color: Colors.white70)),
-            Text('E-mail: webmaster@jiwoosoft.com', style: TextStyle(color: Colors.white70)),
-            SizedBox(height: 8),
-            Text('Built with Flutter ❤️', style: TextStyle(color: Colors.white70)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => _checkForUpdate(context),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.system_update, color: Colors.teal, size: 18),
-                SizedBox(width: 4),
-                Text('업데이트 확인', style: TextStyle(color: Colors.teal)),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('확인', style: TextStyle(color: Colors.teal)),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _checkForUpdate(BuildContext context) async {
@@ -2614,32 +2449,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.pop(context);
             },
             child: Text('업데이트', style: TextStyle(color: Colors.teal)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _logout(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[850],
-        title: Text('로그아웃', style: TextStyle(color: Colors.white)),
-        content: Text('정말 로그아웃하시겠습니까?', style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('취소'),
-          ),
-          TextButton(
-              onPressed: () {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => LoginScreen()),
-                (Route<dynamic> route) => false,
-              );
-            },
-            child: Text('로그아웃', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
