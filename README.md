@@ -4,7 +4,7 @@
 
 [📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1Oybxwu2njbXe1-s8k4kOu6XJMSf2dH4w/view?usp=drivesdk)
 
-### 🚀 최신 버전 (v1.0.29)
+### 🚀 최신 버전 (v1.0.30)
 - **버전**: v1.0.21+22
 - **크기**: 62.9MB
 - **최종 업데이트**: 2025.07.05

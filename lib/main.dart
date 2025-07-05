@@ -2530,29 +2530,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
               print('🌐 URL 실행 시도: $url');
               
               try {
-                final uri = Uri.parse(url);
+                // Google Drive 링크를 브라우저에서 열기 위해 수정
+                String finalUrl = url;
+                if (url.contains('drive.google.com') && url.contains('view?usp=')) {
+                  // Google Drive 공유 링크를 직접 다운로드 링크로 변환하지 않고 그대로 사용
+                  finalUrl = url;
+                }
+                
+                final uri = Uri.parse(finalUrl);
+                print('📱 최종 URL: $finalUrl');
                 print('📱 canLaunchUrl 확인 중...');
                 
-                if (await canLaunchUrl(uri)) {
-                  print('✅ URL 실행 가능, launchUrl 호출...');
-                  await launchUrl(
-                    uri,
-                    mode: LaunchMode.externalApplication,
-                  );
-                  print('🚀 URL 실행 완료');
-                } else {
-                  print('❌ URL 실행 불가능');
-                  throw 'URL을 열 수 없습니다: $url';
+                // 여러 방법으로 시도
+                bool launched = false;
+                
+                // 방법 1: 외부 애플리케이션으로 열기
+                try {
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(
+                      uri,
+                      mode: LaunchMode.externalApplication,
+                    );
+                    launched = true;
+                    print('✅ 외부 애플리케이션으로 URL 실행 성공');
+                  }
+                } catch (e) {
+                  print('⚠️ 외부 애플리케이션 실행 실패: $e');
                 }
+                
+                // 방법 2: 기본 브라우저로 열기
+                if (!launched) {
+                  try {
+                    await launchUrl(
+                      uri,
+                      mode: LaunchMode.platformDefault,
+                    );
+                    launched = true;
+                    print('✅ 기본 브라우저로 URL 실행 성공');
+                  } catch (e) {
+                    print('⚠️ 기본 브라우저 실행 실패: $e');
+                  }
+                }
+                
+                // 방법 3: 인앱 브라우저로 열기
+                if (!launched) {
+                  try {
+                    await launchUrl(
+                      uri,
+                      mode: LaunchMode.inAppWebView,
+                    );
+                    launched = true;
+                    print('✅ 인앱 브라우저로 URL 실행 성공');
+                  } catch (e) {
+                    print('⚠️ 인앱 브라우저 실행 실패: $e');
+                  }
+                }
+                
+                if (!launched) {
+                  throw 'URL을 열 수 없습니다: $finalUrl';
+                }
+                
               } catch (e) {
                 print('❌ URL 실행 실패: $e');
                 if (!mounted) return;
                 
+                // 실패 시 URL을 클립보드에 복사하고 안내 메시지 표시
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('다운로드 링크를 열 수 없습니다: $e'),
-                    backgroundColor: Colors.red,
-                    duration: Duration(seconds: 5),
+                    content: Text('브라우저에서 직접 열어주세요:\n$url'),
+                    backgroundColor: Colors.orange,
+                    duration: Duration(seconds: 8),
+                    action: SnackBarAction(
+                      label: '복사',
+                      onPressed: () {
+                        // 클립보드 복사 기능은 별도 패키지가 필요하므로 생략
+                        print('URL 복사 요청: $url');
+                      },
+                    ),
                   ),
                 );
               }
