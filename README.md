@@ -1,13 +1,12 @@
 # 안전한 메모장 앱 🔒
 
-## 📱 다운로드
-**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1yzTLAFlASa_3XXzRh4asIBY1cUJC0s3Q/view?usp=drivesdk)**
+## 📥 다운로드
 
-**현재 버전**: v1.0.16+17
+[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1Oybxwu2njbXe1-s8k4kOu6XJMSf2dH4w/view?usp=drivesdk)
 
-- **파일 크기**: 62.9MB
-- **Android 요구사항**: 5.0+ (API 21+)
-- **패키지명**: `com.jiwoosoft.secure_memo`
+### 🚀 최신 버전 (v1.0.22)
+- **버전**: v1.0.21+22
+- **크기**: 62.9MB
 - **최종 업데이트**: 2025.07.05
 
 > 📝 **Google Drive 다운로드 방법**: 링크 클릭 → 우상단 다운로드 버튼 클릭
