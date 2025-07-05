@@ -2248,75 +2248,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text('테마 선택'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<AppTheme>(
-                title: Text('시스템 설정 따름'),
-                subtitle: Text('디바이스 설정에 따라 자동 변경'),
-                value: AppTheme.system,
-                groupValue: _currentTheme,
-                onChanged: (value) {
-                  setDialogState(() {
-                    _currentTheme = value;
-                  });
-                  setState(() {
-                    _currentTheme = value;
-                  });
-                },
+      builder: (context) {
+        AppTheme selectedTheme = _currentTheme ?? AppTheme.system;
+        
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.grey[850],
+              title: Text('테마 설정', style: TextStyle(color: Colors.white)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: AppTheme.values.map((theme) {
+                  return RadioListTile<AppTheme>(
+                    title: Text(
+                      _getThemeDisplayName(theme),
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    value: theme,
+                    groupValue: selectedTheme,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedTheme = value!;
+                      });
+                    },
+                  );
+                }).toList(),
               ),
-              RadioListTile<AppTheme>(
-                title: Text('라이트 테마'),
-                subtitle: Text('밝은 화면 모드'),
-                value: AppTheme.light,
-                groupValue: _currentTheme,
-                onChanged: (value) {
-                  setDialogState(() {
-                    _currentTheme = value;
-                  });
-                  setState(() {
-                    _currentTheme = value;
-                  });
-                },
-              ),
-              RadioListTile<AppTheme>(
-                title: Text('다크 테마'),
-                subtitle: Text('어두운 화면 모드'),
-                value: AppTheme.dark,
-                groupValue: _currentTheme,
-                onChanged: (value) {
-                  setDialogState(() {
-                    _currentTheme = value;
-                  });
-                  setState(() {
-                    _currentTheme = value;
-                  });
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _isThemeDialogOpen = false;
-              },
-              child: Text('취소'),
-            ),
-            TextButton(
-              onPressed: () async {
-                await DataService.saveThemeSettings(_currentTheme!);
-                Navigator.pop(context);
-                _isThemeDialogOpen = false;
-              },
-              child: Text('적용'),
-            ),
-          ],
-        ),
-      ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _isThemeDialogOpen = false;
+                  },
+                  child: Text('취소', style: TextStyle(color: Colors.grey)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await DataService.saveThemeSettings(selectedTheme);
+                    setState(() {
+                      _currentTheme = selectedTheme;
+                    });
+                    Navigator.pop(context);
+                    _isThemeDialogOpen = false;
+                  },
+                  child: Text('적용', style: TextStyle(color: Colors.teal)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     ).then((_) => _isThemeDialogOpen = false);
   }
 
@@ -2326,85 +2307,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text('폰트 크기'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<FontSize>(
-                title: Text('작게'),
-                value: FontSize.small,
-                groupValue: _currentFontSize,
-                onChanged: (value) {
-                  setDialogState(() {
-                    _currentFontSize = value;
-                  });
-                  setState(() {
-                    _currentFontSize = value;
-                  });
-                },
+      builder: (context) {
+        FontSize selectedFontSize = _currentFontSize ?? FontSize.medium;
+        
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.grey[850],
+              title: Text('폰트 크기', style: TextStyle(color: Colors.white)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: FontSize.values.map((fontSize) {
+                  return RadioListTile<FontSize>(
+                    title: Text(
+                      _getFontSizeDisplayName(fontSize),
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    value: fontSize,
+                    groupValue: selectedFontSize,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedFontSize = value!;
+                      });
+                    },
+                  );
+                }).toList(),
               ),
-              RadioListTile<FontSize>(
-                title: Text('보통'),
-                value: FontSize.medium,
-                groupValue: _currentFontSize,
-                onChanged: (value) {
-                  setDialogState(() {
-                    _currentFontSize = value;
-                  });
-                  setState(() {
-                    _currentFontSize = value;
-                  });
-                },
-              ),
-              RadioListTile<FontSize>(
-                title: Text('크게'),
-                value: FontSize.large,
-                groupValue: _currentFontSize,
-                onChanged: (value) {
-                  setDialogState(() {
-                    _currentFontSize = value;
-                  });
-                  setState(() {
-                    _currentFontSize = value;
-                  });
-                },
-              ),
-              RadioListTile<FontSize>(
-                title: Text('매우 크게'),
-                value: FontSize.extraLarge,
-                groupValue: _currentFontSize,
-                onChanged: (value) {
-                  setDialogState(() {
-                    _currentFontSize = value;
-                  });
-                  setState(() {
-                    _currentFontSize = value;
-                  });
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _isFontSizeDialogOpen = false;
-              },
-              child: Text('취소'),
-            ),
-            TextButton(
-              onPressed: () async {
-                await DataService.saveFontSizeSettings(_currentFontSize!);
-                Navigator.pop(context);
-                _isFontSizeDialogOpen = false;
-              },
-              child: Text('적용'),
-            ),
-          ],
-        ),
-      ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _isFontSizeDialogOpen = false;
+                  },
+                  child: Text('취소', style: TextStyle(color: Colors.grey)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await DataService.saveFontSizeSettings(selectedFontSize);
+                    setState(() {
+                      _currentFontSize = selectedFontSize;
+                    });
+                    Navigator.pop(context);
+                    _isFontSizeDialogOpen = false;
+                  },
+                  child: Text('적용', style: TextStyle(color: Colors.teal)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     ).then((_) => _isFontSizeDialogOpen = false);
   }
 
