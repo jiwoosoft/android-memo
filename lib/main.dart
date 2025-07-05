@@ -2408,35 +2408,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _checkForUpdate(BuildContext context) async {
+    print('🔍 업데이트 확인 시작...');
+    
+    // 로딩 표시
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('업데이트 확인 중...'),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
     try {
+      print('📡 UpdateService.checkForUpdate() 호출...');
       final result = await UpdateService.checkForUpdate();
       
-      if (!mounted) return;
+      print('✅ 업데이트 확인 완료');
+      print('현재 버전: ${result.currentVersion}');
+      print('최신 버전: ${result.latestVersion}');
+      print('업데이트 필요: ${result.hasUpdate}');
+      
+      if (!mounted) {
+        print('⚠️ Widget이 unmounted 상태');
+        return;
+      }
 
-      if (result.hasUpdate && result.releaseInfo != null) {
+      if (result.hasUpdate) {
+        print('🚀 업데이트 다이얼로그 표시');
         _showUpdateDialog(context, result);
       } else {
+        print('✅ 최신 버전입니다');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('현재 최신 버전입니다.'),
+            content: Text('현재 최신 버전입니다. (v${result.currentVersion})'),
             backgroundColor: Colors.teal,
           ),
         );
       }
-    } catch (e) {
-      print('업데이트 확인 오류: $e');
+    } catch (e, stackTrace) {
+      print('❌ 업데이트 확인 오류: $e');
+      print('스택 트레이스: $stackTrace');
+      
       if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('업데이트 확인 중 오류가 발생했습니다.'),
+          content: Text('업데이트 확인 중 오류가 발생했습니다: $e'),
           backgroundColor: Colors.red,
+          duration: Duration(seconds: 5),
         ),
       );
     }
   }
 
   void _showUpdateDialog(BuildContext context, UpdateCheckResult result) {
+    print('📱 업데이트 다이얼로그 표시 중...');
+    print('다운로드 URL: ${result.releaseInfo.downloadUrl}');
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -2469,32 +2497,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text(
                 result.releaseInfo.body,
                 style: TextStyle(color: Colors.white70),
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              print('❌ 사용자가 업데이트를 취소했습니다');
+              Navigator.pop(context);
+            },
             child: Text('나중에', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
+              print('🔗 업데이트 버튼 클릭됨');
               Navigator.pop(context);
+              
+              final url = result.releaseInfo.downloadUrl;
+              print('🌐 URL 실행 시도: $url');
+              
               try {
-                if (await canLaunch(result.releaseInfo.downloadUrl)) {
-                  await launch(result.releaseInfo.downloadUrl);
+                final uri = Uri.parse(url);
+                print('📱 canLaunchUrl 확인 중...');
+                
+                if (await canLaunchUrl(uri)) {
+                  print('✅ URL 실행 가능, launchUrl 호출...');
+                  await launchUrl(
+                    uri,
+                    mode: LaunchMode.externalApplication,
+                  );
+                  print('🚀 URL 실행 완료');
                 } else {
-                  throw '다운로드 URL을 열 수 없습니다.';
+                  print('❌ URL 실행 불가능');
+                  throw 'URL을 열 수 없습니다: $url';
                 }
               } catch (e) {
-                print('다운로드 URL 열기 실패: $e');
+                print('❌ URL 실행 실패: $e');
                 if (!mounted) return;
                 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('업데이트 파일을 다운로드할 수 없습니다.'),
+                    content: Text('다운로드 링크를 열 수 없습니다: $e'),
                     backgroundColor: Colors.red,
+                    duration: Duration(seconds: 5),
                   ),
                 );
               }
