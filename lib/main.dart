@@ -2246,118 +2246,120 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_isThemeDialogOpen) return;
     _isThemeDialogOpen = true;
 
+    AppTheme tempTheme = _currentTheme ?? AppTheme.system;
+
     showDialog(
       context: context,
-      builder: (context) {
-        AppTheme selectedTheme = _currentTheme ?? AppTheme.system;
-        
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Colors.grey[850],
-              title: Text('테마 설정', style: TextStyle(color: Colors.white)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: AppTheme.values.map((theme) {
-                  return RadioListTile<AppTheme>(
-                    title: Text(
-                      _getThemeDisplayName(theme),
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    value: theme,
-                    groupValue: selectedTheme,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        selectedTheme = value!;
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _isThemeDialogOpen = false;
-                  },
-                  child: Text('취소', style: TextStyle(color: Colors.grey)),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await DataService.saveThemeSettings(selectedTheme);
-                    setState(() {
-                      _currentTheme = selectedTheme;
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.grey[850],
+            title: Text('테마 설정', style: TextStyle(color: Colors.white)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: AppTheme.values.map((theme) {
+                return RadioListTile<AppTheme>(
+                  title: Text(
+                    _getThemeDisplayName(theme),
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  value: theme,
+                  groupValue: tempTheme,
+                  activeColor: Colors.teal,
+                  onChanged: (value) {
+                    setDialogState(() {
+                      tempTheme = value!;
                     });
-                    Navigator.pop(context);
-                    _isThemeDialogOpen = false;
                   },
-                  child: Text('적용', style: TextStyle(color: Colors.teal)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    ).then((_) => _isThemeDialogOpen = false);
+                );
+              }).toList(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  _isThemeDialogOpen = false;
+                  Navigator.pop(context);
+                },
+                child: Text('취소', style: TextStyle(color: Colors.grey)),
+              ),
+              TextButton(
+                onPressed: () async {
+                  setState(() {
+                    _currentTheme = tempTheme;
+                  });
+                  await DataService.saveThemeSettings(tempTheme);
+                  _isThemeDialogOpen = false;
+                  Navigator.pop(context);
+                },
+                child: Text('적용', style: TextStyle(color: Colors.teal)),
+              ),
+            ],
+          );
+        },
+      ),
+    ).then((_) {
+      _isThemeDialogOpen = false;
+    });
   }
 
   void _showFontSizeDialog(BuildContext context) {
     if (_isFontSizeDialogOpen) return;
     _isFontSizeDialogOpen = true;
 
+    FontSize tempFontSize = _currentFontSize ?? FontSize.medium;
+
     showDialog(
       context: context,
-      builder: (context) {
-        FontSize selectedFontSize = _currentFontSize ?? FontSize.medium;
-        
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Colors.grey[850],
-              title: Text('폰트 크기', style: TextStyle(color: Colors.white)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: FontSize.values.map((fontSize) {
-                  return RadioListTile<FontSize>(
-                    title: Text(
-                      _getFontSizeDisplayName(fontSize),
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    value: fontSize,
-                    groupValue: selectedFontSize,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        selectedFontSize = value!;
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _isFontSizeDialogOpen = false;
-                  },
-                  child: Text('취소', style: TextStyle(color: Colors.grey)),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await DataService.saveFontSizeSettings(selectedFontSize);
-                    setState(() {
-                      _currentFontSize = selectedFontSize;
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.grey[850],
+            title: Text('폰트 크기 설정', style: TextStyle(color: Colors.white)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: FontSize.values.map((fontSize) {
+                return RadioListTile<FontSize>(
+                  title: Text(
+                    _getFontSizeDisplayName(fontSize),
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  value: fontSize,
+                  groupValue: tempFontSize,
+                  activeColor: Colors.teal,
+                  onChanged: (value) {
+                    setDialogState(() {
+                      tempFontSize = value!;
                     });
-                    Navigator.pop(context);
-                    _isFontSizeDialogOpen = false;
                   },
-                  child: Text('적용', style: TextStyle(color: Colors.teal)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    ).then((_) => _isFontSizeDialogOpen = false);
+                );
+              }).toList(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  _isFontSizeDialogOpen = false;
+                  Navigator.pop(context);
+                },
+                child: Text('취소', style: TextStyle(color: Colors.grey)),
+              ),
+              TextButton(
+                onPressed: () async {
+                  setState(() {
+                    _currentFontSize = tempFontSize;
+                  });
+                  await DataService.saveFontSizeSettings(tempFontSize);
+                  _isFontSizeDialogOpen = false;
+                  Navigator.pop(context);
+                },
+                child: Text('적용', style: TextStyle(color: Colors.teal)),
+              ),
+            ],
+          );
+        },
+      ),
+    ).then((_) {
+      _isFontSizeDialogOpen = false;
+    });
   }
 
   @override
