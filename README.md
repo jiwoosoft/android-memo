@@ -2,11 +2,11 @@
 
 ## 📥 다운로드
 
-[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1X7izR8h76moM4XzTQ47rEkTeppO2tXaR/view?usp=drivesdk)
+[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1seFr7nFCnG5To9_Z0l7EUEXdvx6rHyyO/view?usp=drivesdk)
 
-### 🚀 최신 버전 (v2.0.6) - PIN 설정 버그 긴급 수정
-- **버전**: v2.0.5+47
-- **크기**: 64.0MB
+### 🚀 최신 버전 (v2.0.8) - 로그인 문제 완전 해결
+- **버전**: v2.0.8+50
+- **크기**: 64.1MB
 - **최종 업데이트**: 2025.07.06
 - **주요 변경**: 지문인증 시스템 추가
 
