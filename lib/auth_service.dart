@@ -83,9 +83,10 @@ class AuthService {
   /// PIN 검증 (단순화된 평문 비교 - 디버깅용)
   static Future<bool> verifyPin(String pin) async {
     try {
-      print('🔍 [DEBUG] PIN 검증 시작');
+      print('🔍 [DEBUG] ===== PIN 검증 시작 =====');
       print('📝 [DEBUG] 입력된 PIN: "$pin"');
       print('📏 [DEBUG] 입력 PIN 길이: ${pin.length}');
+      print('🔤 [DEBUG] 입력 PIN 문자 코드: ${pin.codeUnits}');
       
       final prefs = await SharedPreferences.getInstance();
       
@@ -95,15 +96,35 @@ class AuthService {
       
       if (storedPin != null) {
         print('📏 [DEBUG] 저장된 PIN 길이: ${storedPin.length}');
+        print('🔤 [DEBUG] 저장된 PIN 문자 코드: ${storedPin.codeUnits}');
         print('🔍 [DEBUG] PIN 비교: "$pin" == "$storedPin"');
+        print('🔍 [DEBUG] 문자열 identical: ${identical(pin, storedPin)}');
+        print('🔍 [DEBUG] hashCode 비교: ${pin.hashCode} vs ${storedPin.hashCode}');
+        
+        // 문자별 비교
+        if (pin.length == storedPin.length) {
+          bool allMatch = true;
+          for (int i = 0; i < pin.length; i++) {
+            final inputChar = pin[i];
+            final storedChar = storedPin[i];
+            final charMatch = inputChar == storedChar;
+            print('🔍 [DEBUG] 문자 $i: "$inputChar" == "$storedChar" = $charMatch');
+            if (!charMatch) allMatch = false;
+          }
+          print('🔍 [DEBUG] 모든 문자 일치: $allMatch');
+        }
         
         final isMatch = pin == storedPin;
-        print('✅ [DEBUG] 비교 결과: $isMatch');
+        print('✅ [DEBUG] 최종 비교 결과: $isMatch');
         
         if (isMatch) {
           print('🎉 [DEBUG] PIN 검증 성공!');
           return true;
+        } else {
+          print('❌ [DEBUG] PIN 검증 실패 - 문자열 불일치');
         }
+      } else {
+        print('❌ [DEBUG] 저장된 PIN이 없습니다');
       }
       
       // 백업에서도 확인
@@ -117,10 +138,11 @@ class AuthService {
         return true;
       }
       
-      print('❌ [DEBUG] PIN 검증 실패');
+      print('❌ [DEBUG] ===== PIN 검증 완전 실패 =====');
       return false;
     } catch (e) {
       print('❌ [DEBUG] PIN 검증 오류: $e');
+      print('❌ [DEBUG] 스택 트레이스: ${e.toString()}');
       return false;
     }
   }

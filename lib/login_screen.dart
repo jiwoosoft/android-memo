@@ -298,6 +298,13 @@ ${pinKeys.map((key) => '  - $key: "${prefs.getString(key) ?? 'null'}"').join('\n
               },
               child: const Text('PIN 저장 테스트'),
             ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _testDirectPin();
+              },
+              child: const Text('1234로 직접 테스트'),
+            ),
           ],
         ),
       );
@@ -368,6 +375,38 @@ ${pinKeys.map((key) => '  - $key: "${prefs.getString(key) ?? 'null'}"').join('\n
     } catch (e) {
       print('🧪 [TEST] 저장 테스트 오류: $e');
       _showErrorMessage('저장 테스트 실패: $e');
+    }
+  }
+
+  /// 직접 1234로 PIN 테스트 (입력 필드 우회)
+  Future<void> _testDirectPin() async {
+    const testPin = '1234';
+    
+    try {
+      print('🧪 [DIRECT TEST] 1234로 직접 PIN 검증 테스트');
+      
+      final result = await AuthService.verifyPin(testPin);
+      print('🧪 [DIRECT TEST] 검증 결과: $result');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result ? '✅ 1234 검증 성공!' : '❌ 1234 검증 실패!',
+          ),
+          backgroundColor: result ? Colors.green : Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      
+      // 성공하면 로그인 처리
+      if (result) {
+        print('🎉 [DIRECT TEST] 로그인 성공! 홈으로 이동');
+        DataService.setSessionPin(testPin);
+        Navigator.of(context).pushReplacementNamed('/');
+      }
+    } catch (e) {
+      print('🧪 [DIRECT TEST] 테스트 오류: $e');
+      _showErrorMessage('직접 테스트 실패: $e');
     }
   }
 
