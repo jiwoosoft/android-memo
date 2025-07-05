@@ -381,31 +381,31 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppSettings>(
       builder: (context, settings, _) {
-        return MaterialApp(
-          title: '안전한 메모장',
-          debugShowCheckedModeBanner: false,
+    return MaterialApp(
+      title: '안전한 메모장',
+      debugShowCheckedModeBanner: false,
           themeMode: settings.themeMode,
           routes: {
             '/': (context) => MemoListScreen(),
             '/auth-setup': (context) => AuthSetupScreen(),
             '/login': (context) => LoginScreen(),
           },
-          theme: ThemeData(
-            brightness: Brightness.light,
-            primarySwatch: Colors.teal,
+      theme: ThemeData(
+        brightness: Brightness.light,
+        primarySwatch: Colors.teal,
             scaffoldBackgroundColor: Colors.grey[50],
             cardColor: Colors.white,
-            appBarTheme: AppBarTheme(
-              backgroundColor: Colors.teal,
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.teal,
+          foregroundColor: Colors.white,
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Colors.teal,
               foregroundColor: Colors.white,
-            ),
-            floatingActionButtonTheme: FloatingActionButtonThemeData(
-              backgroundColor: Colors.teal,
-              foregroundColor: Colors.white,
-            ),
-            textTheme: _buildTextTheme(TextTheme(
-              bodyLarge: TextStyle(color: Colors.black87),
-              bodyMedium: TextStyle(color: Colors.black54),
+        ),
+        textTheme: _buildTextTheme(TextTheme(
+          bodyLarge: TextStyle(color: Colors.black87),
+          bodyMedium: TextStyle(color: Colors.black54),
               titleMedium: TextStyle(color: Colors.black87),
               titleSmall: TextStyle(color: Colors.black54),
             ), settings.fontSizeMultiplier),
@@ -413,25 +413,25 @@ class MyApp extends StatelessWidget {
               color: Colors.white,
               textStyle: TextStyle(color: Colors.black87),
             ),
-          ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            primarySwatch: Colors.teal,
-            scaffoldBackgroundColor: Colors.black,
-            cardColor: Colors.grey[900],
-            appBarTheme: AppBarTheme(
-              backgroundColor: Colors.grey[950],
-              foregroundColor: Colors.white,
-            ),
-            floatingActionButtonTheme: FloatingActionButtonThemeData(
-              backgroundColor: Colors.teal,
-            ),
-            textTheme: _buildTextTheme(TextTheme(
-              bodyLarge: TextStyle(color: Colors.white),
-              bodyMedium: TextStyle(color: Colors.white70),
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.teal,
+        scaffoldBackgroundColor: Colors.black,
+        cardColor: Colors.grey[900],
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.grey[950],
+          foregroundColor: Colors.white,
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Colors.teal,
+        ),
+        textTheme: _buildTextTheme(TextTheme(
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white70),
             ), settings.fontSizeMultiplier),
-          ),
-          home: SplashScreen(),
+      ),
+      home: SplashScreen(),
         );
       },
     );
@@ -567,7 +567,7 @@ class _MemoListScreenState extends State<MemoListScreen> {
   SortOption _currentSortOption = SortOption.updatedDate;
   SortOrder _currentSortOrder = SortOrder.descending;
   final TextEditingController _searchController = TextEditingController();
-
+  
   List<Category> get displayCategories => _isSearchMode ? filteredCategories : categories;
 
   @override
@@ -1164,9 +1164,9 @@ class _MemoListScreenState extends State<MemoListScreen> {
     return ListView.builder(
       padding: EdgeInsets.all(16),
       itemCount: displayCategories.length,
-      itemBuilder: (context, index) {
+        itemBuilder: (context, index) {
         final category = displayCategories[index];
-        return Card(
+          return Card(
           margin: EdgeInsets.only(bottom: 12),
           elevation: Theme.of(context).brightness == Brightness.light ? 4 : 2,
           shadowColor: Theme.of(context).brightness == Brightness.light 
@@ -1324,23 +1324,23 @@ class _MemoListScreenState extends State<MemoListScreen> {
         ),
       ),
       child: ReorderableListView.builder(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        itemCount: category.memos.length,
-        onReorder: (oldIndex, newIndex) {
-          setState(() {
-            if (newIndex > oldIndex) {
-              newIndex -= 1;
-            }
-            final item = category.memos.removeAt(oldIndex);
-            category.memos.insert(newIndex, item);
-          });
-          _saveCategories();
-        },
-        itemBuilder: (context, memoIndex) {
-          final memo = category.memos[memoIndex];
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: category.memos.length,
+      onReorder: (oldIndex, newIndex) {
+        setState(() {
+          if (newIndex > oldIndex) {
+            newIndex -= 1;
+          }
+          final item = category.memos.removeAt(oldIndex);
+          category.memos.insert(newIndex, item);
+        });
+        _saveCategories();
+      },
+      itemBuilder: (context, memoIndex) {
+        final memo = category.memos[memoIndex];
           return Container(
-            key: ValueKey(memo.id),
+          key: ValueKey(memo.id),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -1356,23 +1356,23 @@ class _MemoListScreenState extends State<MemoListScreen> {
                   ? Colors.blue[25]  // 라이트 모드: 매우 연한 파란색 (개별 메모)
                   : Colors.grey[900],  // 다크 모드: 진한 회색 (개별 메모)
               child: ListTile(
-                leading: Icon(Icons.note, color: Colors.teal, size: 20),
-                title: Text(
-                  memo.title.isEmpty ? '제목 없음' : memo.title,
+          leading: Icon(Icons.note, color: Colors.teal, size: 20),
+          title: Text(
+            memo.title.isEmpty ? '제목 없음' : memo.title,
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.light 
                         ? Colors.black87 
                         : Colors.white,
                   ),
-                ),
-              subtitle: memo.tags.isNotEmpty 
+          ),
+          subtitle: memo.tags.isNotEmpty 
                   ? Wrap(
-                      spacing: 4,
+                  spacing: 4,
                       children: memo.tags.map((tag) => Chip(
                         label: Text(
-                          tag,
-                          style: TextStyle(
-                            fontSize: 10,
+                        tag,
+                        style: TextStyle(
+                          fontSize: 10,
                             color: Theme.of(context).brightness == Brightness.light 
                                 ? Colors.white 
                                 : Colors.white,
@@ -1382,12 +1382,12 @@ class _MemoListScreenState extends State<MemoListScreen> {
                         padding: EdgeInsets.zero,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       )).toList(),
-                    )
-                  : null,
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  PopupMenuButton(
+              )
+            : null,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PopupMenuButton(
                     icon: Icon(
                       Icons.more_vert,
                       color: Theme.of(context).brightness == Brightness.light 
@@ -1395,24 +1395,24 @@ class _MemoListScreenState extends State<MemoListScreen> {
                           : Colors.white70,
                       size: 20,
                     ),
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Text('수정'),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Text('삭제'),
-                      ),
-                    ],
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        _editMemo(category, memo);
-                      } else if (value == 'delete') {
-                        _deleteMemo(category, memo);
-                      }
-                    },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Text('수정'),
                   ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text('삭제'),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    _editMemo(category, memo);
+                  } else if (value == 'delete') {
+                    _deleteMemo(category, memo);
+                  }
+                },
+              ),
                   Icon(
                     Icons.drag_handle, 
                     color: Theme.of(context).brightness == Brightness.light 
@@ -1420,13 +1420,13 @@ class _MemoListScreenState extends State<MemoListScreen> {
                         : Colors.white38, 
                     size: 16,
                   ),
-                ],
-              ),
-              onTap: () => _viewMemo(category, memo),
+            ],
+          ),
+          onTap: () => _viewMemo(category, memo),
               ),
             ),
-          );
-        },
+        );
+      },
       ),
     );
   }
@@ -2107,11 +2107,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (context, setState) => AlertDialog(
           backgroundColor: backgroundColor,
           title: Text('인증 방법 설정', style: TextStyle(color: textColor)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
                 '앱 실행 시 사용할 인증 방법을 선택하세요',
                 style: TextStyle(color: textColor, fontSize: 14),
               ),
@@ -2184,10 +2184,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }
                 } : null,
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
+          ],
+        ),
+        actions: [
+          TextButton(
               child: Text('취소', style: TextStyle(color: Colors.teal)),
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -2425,7 +2425,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     );
                     launched = true;
                     print('✅ 인앱 브라우저로 URL 실행 성공');
-                  } catch (e) {
+    } catch (e) {
                     print('⚠️ 인앱 브라우저 실행 실패: $e');
                   }
                 }
@@ -2446,7 +2446,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     duration: Duration(seconds: 8),
                     action: SnackBarAction(
                       label: '복사',
-                      onPressed: () {
+              onPressed: () {
                         // 클립보드 복사 기능은 별도 패키지가 필요하므로 생략
                         print('URL 복사 요청: $url');
                       },

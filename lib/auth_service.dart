@@ -43,53 +43,72 @@ class AuthService {
     }
   }
 
-  /// PIN 저장 (해시화하여 저장)
+  /// PIN 저장 (이중 저장으로 안전성 확보)
   static Future<void> savePin(String pin) async {
     try {
+      print('🔐 PIN 저장 시작: $pin');
+      
+      // 1. SharedPreferences에 해시된 PIN 저장
       final prefs = await SharedPreferences.getInstance();
-      final hashedPin = sha256.convert(utf8.encode(pin)).toString();
-      final success = await prefs.setString(_pinKey, hashedPin);
+      final hashedPin = sha256.convert(utf8.encode(pin, allowMalformed: false)).toString();
+      await prefs.setString(_pinKey, hashedPin);
       
-      print('🔐 PIN 저장 시도');
-      print('📝 원본 PIN: $pin');
-      print('🔒 해시된 PIN: $hashedPin');
-      print('💾 저장 성공: $success');
+      // 2. FlutterSecureStorage에 원본 PIN 저장 (추가 보안)
+      await _secureStorage.write(key: '${_pinKey}_secure', value: pin);
       
-      // 저장 확인
-      final verification = prefs.getString(_pinKey);
-      print('✅ 저장 확인: ${verification != null ? '성공' : '실패'}');
+      print('💾 SharedPreferences 저장: $hashedPin');
+      print('🔒 SecureStorage 저장 완료');
       
-      if (!success || verification == null) {
-        throw Exception('PIN 저장에 실패했습니다');
+      // 3. 저장 즉시 검증
+      final verification = await verifyPin(pin);
+      print('✅ 저장 후 즉시 검증: ${verification ? '성공' : '실패'}');
+      
+      if (!verification) {
+        throw Exception('PIN 저장 후 검증에 실패했습니다');
       }
+      
+      print('🎉 PIN 저장 및 검증 완료');
     } catch (e) {
       print('❌ PIN 저장 중 오류: $e');
       rethrow;
     }
   }
 
-  /// PIN 검증
+  /// PIN 검증 (이중 검증으로 안전성 확보)
   static Future<bool> verifyPin(String pin) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final storedHashedPin = prefs.getString(_pinKey);
+      print('🔍 PIN 검증 시작: $pin');
       
-      print('🔍 PIN 검증 시작');
-      print('📝 입력된 PIN: $pin');
+      final prefs = await SharedPreferences.getInstance();
+      
+      // 1차 검증: SharedPreferences의 해시 비교
+      final storedHashedPin = prefs.getString(_pinKey);
       print('🔒 저장된 해시: ${storedHashedPin ?? 'null'}');
       
-      if (storedHashedPin == null) {
-        print('❌ 저장된 PIN이 없습니다');
-        return false;
+      if (storedHashedPin != null) {
+        final hashedPin = sha256.convert(utf8.encode(pin, allowMalformed: false)).toString();
+        print('🔒 입력 PIN 해시: $hashedPin');
+        
+        if (storedHashedPin == hashedPin) {
+          print('✅ 1차 검증 성공 (해시 일치)');
+          return true;
+        }
       }
       
-      final hashedPin = sha256.convert(utf8.encode(pin)).toString();
-      print('🔒 입력 PIN 해시: $hashedPin');
+      // 2차 검증: SecureStorage의 원본 비교 (fallback)
+      final securePin = await _secureStorage.read(key: '${_pinKey}_secure');
+      print('🔐 SecureStorage PIN: ${securePin ?? 'null'}');
       
-      final isMatch = storedHashedPin == hashedPin;
-      print('✅ PIN 일치 여부: $isMatch');
+      if (securePin != null && securePin == pin) {
+        print('✅ 2차 검증 성공 (원본 일치)');
+        // 해시 저장이 깨진 경우 복구
+        await prefs.setString(_pinKey, sha256.convert(utf8.encode(pin, allowMalformed: false)).toString());
+        print('🔧 해시 복구 완료');
+        return true;
+      }
       
-      return isMatch;
+      print('❌ 모든 검증 실패');
+      return false;
     } catch (e) {
       print('❌ PIN 검증 중 오류: $e');
       return false;
@@ -193,12 +212,23 @@ class AuthService {
 
   /// 인증 설정 초기화 (앱 재설치 시 등)
   static Future<void> resetAuthSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_pinKey);
-    await prefs.remove(_authMethodKey);
-    await prefs.remove(_biometricEnabledKey);
-    await _secureStorage.deleteAll();
-    print('인증 설정이 초기화되었습니다.');
+    try {
+      print('🔄 인증 설정 초기화 시작');
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_pinKey);
+      await prefs.remove(_authMethodKey);
+      await prefs.remove(_biometricEnabledKey);
+      
+      // SecureStorage도 완전 삭제
+      await _secureStorage.delete(key: '${_pinKey}_secure');
+      await _secureStorage.deleteAll();
+      
+      print('✅ 인증 설정이 완전히 초기화되었습니다.');
+    } catch (e) {
+      print('❌ 인증 설정 초기화 중 오류: $e');
+      rethrow;
+    }
   }
 
   /// 생체인증 타입을 한글로 변환
