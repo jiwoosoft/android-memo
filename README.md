@@ -4,7 +4,7 @@
 
 [📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1seFr7nFCnG5To9_Z0l7EUEXdvx6rHyyO/view?usp=drivesdk)
 
-### 🚀 최신 버전 (v2.0.11) - 로그인 문제 완전 해결
+### 🚀 최신 버전 (v2.0.13) - 로그인 문제 완전 해결
 - **버전**: v2.0.8+50
 - **크기**: 64.1MB
 - **최종 업데이트**: 2025.07.06

@@ -240,22 +240,33 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   Future<void> _showDebugInfo() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final storedPin = prefs.getString('user_pin');
+      final storedPin = prefs.getString('app_pin');
       final authMethod = await AuthService.getAuthMethod();
       final isPinSet = await AuthService.isPinSet();
+      
+      // 모든 PIN 관련 키 확인
+      final allKeys = prefs.getKeys();
+      final pinKeys = allKeys.where((key) => key.contains('pin')).toList();
       
       final debugInfo = '''
 🔍 디버그 정보:
 
 📱 PIN 설정 상태: $isPinSet
-🔐 저장된 PIN: "${storedPin ?? 'null'}"
+🔐 저장된 PIN (app_pin): "${storedPin ?? 'null'}"
 📏 PIN 길이: ${storedPin?.length ?? 0}
 🔧 인증 방법: $authMethod
 🎯 현재 인증 방법: $_currentAuthMethod
 
+🔑 모든 PIN 관련 키:
+${pinKeys.map((key) => '  - $key: "${prefs.getString(key) ?? 'null'}"').join('\n')}
+
 📝 테스트해보세요:
 1. PIN 입력: "${_pinController.text}"
 2. 입력 길이: ${_pinController.text.length}
+
+💾 SharedPreferences 상태:
+- 총 키 개수: ${allKeys.length}
+- PIN 관련 키: ${pinKeys.length}
 ''';
 
       showDialog(
@@ -265,7 +276,7 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
           content: SingleChildScrollView(
             child: Text(
               debugInfo,
-              style: const TextStyle(fontFamily: 'monospace'),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
             ),
           ),
           actions: [
@@ -279,6 +290,13 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                 _testPinVerification();
               },
               child: const Text('PIN 검증 테스트'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _testPinSave();
+              },
+              child: const Text('PIN 저장 테스트'),
             ),
           ],
         ),
@@ -312,6 +330,44 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     } catch (e) {
       print('🧪 [TEST] 검증 테스트 오류: $e');
       _showErrorMessage('검증 테스트 실패: $e');
+    }
+  }
+
+  /// PIN 저장 테스트
+  Future<void> _testPinSave() async {
+    final testPin = _pinController.text;
+    if (testPin.isEmpty) {
+      _showErrorMessage('PIN을 입력해주세요');
+      return;
+    }
+
+    try {
+      print('🧪 [TEST] PIN 저장 테스트 시작: "$testPin"');
+      
+      // 기존 PIN 삭제
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('app_pin');
+      print('🧪 [TEST] 기존 PIN 삭제 완료');
+      
+      // 새 PIN 저장
+      await AuthService.savePin(testPin);
+      print('🧪 [TEST] PIN 저장 완료');
+      
+      // 저장 확인
+      final stored = prefs.getString('app_pin');
+      print('🧪 [TEST] 저장 확인: "$stored"');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            stored == testPin ? '✅ PIN 저장 성공!' : '❌ PIN 저장 실패!',
+          ),
+          backgroundColor: stored == testPin ? Colors.green : Colors.red,
+        ),
+      );
+    } catch (e) {
+      print('🧪 [TEST] 저장 테스트 오류: $e');
+      _showErrorMessage('저장 테스트 실패: $e');
     }
   }
 
