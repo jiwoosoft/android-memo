@@ -2233,7 +2233,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(color: subtitleColor)
             ),
             trailing: Icon(Icons.arrow_forward_ios, color: subtitleColor),
-            onTap: () => _checkForUpdate(context),
+            onTap: () {
+              print('🎯 업데이트 확인 버튼 클릭됨!');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('업데이트 확인 버튼이 클릭되었습니다!'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              _checkForUpdate(context);
+            },
           ),
           Divider(color: dividerColor),
           ListTile(
