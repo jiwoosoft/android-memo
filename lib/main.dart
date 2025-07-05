@@ -379,19 +379,26 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(
             brightness: Brightness.light,
             primarySwatch: Colors.teal,
-            scaffoldBackgroundColor: Colors.white,
-            cardColor: Colors.grey[100],
+            scaffoldBackgroundColor: Colors.grey[50],
+            cardColor: Colors.white,
             appBarTheme: AppBarTheme(
               backgroundColor: Colors.teal,
               foregroundColor: Colors.white,
             ),
             floatingActionButtonTheme: FloatingActionButtonThemeData(
               backgroundColor: Colors.teal,
+              foregroundColor: Colors.white,
             ),
             textTheme: _buildTextTheme(TextTheme(
               bodyLarge: TextStyle(color: Colors.black87),
               bodyMedium: TextStyle(color: Colors.black54),
+              titleMedium: TextStyle(color: Colors.black87),
+              titleSmall: TextStyle(color: Colors.black54),
             ), settings.fontSizeMultiplier),
+            popupMenuTheme: PopupMenuThemeData(
+              color: Colors.white,
+              textStyle: TextStyle(color: Colors.black87),
+            ),
           ),
           darkTheme: ThemeData(
             brightness: Brightness.dark,
@@ -849,14 +856,13 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   List<Category> filteredCategories = [];
   bool _isEditMode = false;
   bool _isSearchMode = false;
-  bool _isTagFilterMode = false;
   String _searchQuery = '';
-  String? _selectedTag;
-  final TextEditingController _searchController = TextEditingController();
-  
-  // 정렬 관련 상태
-  SortOption _currentSortOption = SortOption.createdDate;
+  String? _selectedTag = null;
+  SortOption _currentSortOption = SortOption.updatedDate;
   SortOrder _currentSortOrder = SortOrder.descending;
+  final TextEditingController _searchController = TextEditingController();
+
+  List<Category> get displayCategories => _isSearchMode ? filteredCategories : categories;
 
   @override
   void initState() {
@@ -1347,7 +1353,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                 Expanded(
                   child: _isEditMode
                       ? _buildReorderableList()
-                      : _buildNormalList(),
+                      : _buildCategoryList(),
                 ),
               ],
             ),
@@ -1412,9 +1418,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     );
   }
 
-  Widget _buildNormalList() {
-    final displayCategories = filteredCategories;
-    
+  Widget _buildCategoryList() {
     if (displayCategories.isEmpty && _searchQuery.isNotEmpty) {
       return Center(
         child: Column(
@@ -1423,13 +1427,17 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             Icon(
               Icons.search_off,
               size: 64,
-              color: Colors.white54,
+              color: Theme.of(context).brightness == Brightness.light 
+                  ? Colors.black38 
+                  : Colors.white54,
             ),
             SizedBox(height: 16),
             Text(
               '검색 결과가 없습니다',
               style: TextStyle(
-                color: Colors.white54,
+                color: Theme.of(context).brightness == Brightness.light 
+                    ? Colors.black54 
+                    : Colors.white54,
                 fontSize: 18,
               ),
             ),
@@ -1437,7 +1445,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             Text(
               '"$_searchQuery"에 대한 결과를 찾을 수 없습니다',
               style: TextStyle(
-                color: Colors.white38,
+                color: Theme.of(context).brightness == Brightness.light 
+                    ? Colors.black38 
+                    : Colors.white38,
                 fontSize: 14,
               ),
             ),
@@ -1445,14 +1455,14 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         ),
       );
     }
-    
     return ListView.builder(
       padding: EdgeInsets.all(16),
       itemCount: displayCategories.length,
-        itemBuilder: (context, index) {
+      itemBuilder: (context, index) {
         final category = displayCategories[index];
-          return Card(
+        return Card(
           margin: EdgeInsets.only(bottom: 12),
+          elevation: 2,
           child: ExpandablePanel(
             header: ListTile(
               leading: Icon(
@@ -1463,12 +1473,18 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                 category.name,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Theme.of(context).brightness == Brightness.light 
+                      ? Colors.black87 
+                      : Colors.white,
                 ),
               ),
               subtitle: Text(
                 '${category.memos.length}개의 메모',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.light 
+                      ? Colors.black54 
+                      : Colors.white70,
+                ),
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1480,6 +1496,12 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                       tooltip: '메모 추가',
                     ),
                     PopupMenuButton(
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: Theme.of(context).brightness == Brightness.light 
+                            ? Colors.black54 
+                            : Colors.white70,
+                      ),
                       itemBuilder: (context) => [
                         PopupMenuItem(
                           value: 'edit',
@@ -1503,7 +1525,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.teal.withValues(alpha: 0.2),
+                        color: Colors.teal.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -1571,95 +1593,116 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   }
 
   Widget _buildMemoList(Category category) {
-    return ReorderableListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: category.memos.length,
-      onReorder: (oldIndex, newIndex) {
-        setState(() {
-          if (newIndex > oldIndex) {
-            newIndex -= 1;
-          }
-          final item = category.memos.removeAt(oldIndex);
-          category.memos.insert(newIndex, item);
-        });
-        _saveCategories();
-      },
-      itemBuilder: (context, memoIndex) {
-        final memo = category.memos[memoIndex];
-        return ListTile(
-          key: ValueKey(memo.id),
-          leading: Icon(Icons.note, color: Colors.teal, size: 20),
-          title: Text(
-            memo.title.isEmpty ? '제목 없음' : memo.title,
-            style: TextStyle(color: Colors.white),
-          ),
-          subtitle: memo.tags.isNotEmpty 
-            ? Padding(
-                padding: EdgeInsets.only(top: 4),
-                child: Wrap(
-                  spacing: 4,
-                  runSpacing: 2,
-                  children: memo.tags.take(3).map((tag) {
-                    return Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.teal.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        tag,
-                        style: TextStyle(
-                          color: Colors.teal,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
-                  }).toList()
-                    ..addAll(memo.tags.length > 3 
-                      ? [Container(
-                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          child: Text(
-                            '+${memo.tags.length - 3}',
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 10,
-                            ),
-                          ),
-                        )]
-                      : []),
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.light 
+            ? Colors.grey[100] 
+            : Colors.grey[900],
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(4),
+          bottomRight: Radius.circular(4),
+        ),
+      ),
+      child: ReorderableListView.builder(
+        shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
+        itemCount: category.memos.length,
+        onReorder: (oldIndex, newIndex) {
+          setState(() {
+            if (newIndex > oldIndex) {
+              newIndex -= 1;
+            }
+            final item = category.memos.removeAt(oldIndex);
+            category.memos.insert(newIndex, item);
+          });
+          _saveCategories();
+        },
+        itemBuilder: (context, memoIndex) {
+          final memo = category.memos[memoIndex];
+          return Container(
+            key: ValueKey(memo.id),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).brightness == Brightness.light 
+                      ? Colors.grey[300]! 
+                      : Colors.grey[800]!,
+                  width: 0.5,
                 ),
-              )
-            : null,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              PopupMenuButton(
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Text('수정'),
+              ),
+            ),
+            child: ListTile(
+              leading: Icon(Icons.note, color: Colors.teal, size: 20),
+              title: Text(
+                memo.title.isEmpty ? '제목 없음' : memo.title,
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.light 
+                      ? Colors.black87 
+                      : Colors.white,
+                ),
+              ),
+              subtitle: memo.tags.isNotEmpty 
+                  ? Wrap(
+                      spacing: 4,
+                      children: memo.tags.map((tag) => Chip(
+                        label: Text(
+                          tag,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Theme.of(context).brightness == Brightness.light 
+                                ? Colors.white 
+                                : Colors.white,
+                          ),
+                        ),
+                        backgroundColor: Colors.teal.withOpacity(0.7),
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      )).toList(),
+                    )
+                  : null,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PopupMenuButton(
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: Theme.of(context).brightness == Brightness.light 
+                          ? Colors.black54 
+                          : Colors.white70,
+                      size: 20,
+                    ),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Text('수정'),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text('삭제'),
+                      ),
+                    ],
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        _editMemo(category, memo);
+                      } else if (value == 'delete') {
+                        _deleteMemo(category, memo);
+                      }
+                    },
                   ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Text('삭제'),
+                  Icon(
+                    Icons.drag_handle, 
+                    color: Theme.of(context).brightness == Brightness.light 
+                        ? Colors.black38 
+                        : Colors.white38, 
+                    size: 16,
                   ),
                 ],
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    _editMemo(category, memo);
-                  } else if (value == 'delete') {
-                    _deleteMemo(category, memo);
-                  }
-                },
               ),
-              Icon(Icons.drag_handle, color: Colors.white54, size: 16),
-            ],
-          ),
-          onTap: () => _viewMemo(category, memo),
-        );
-      },
+              onTap: () => _viewMemo(category, memo),
+            ),
+          );
+        },
+      ),
     );
   }
 
