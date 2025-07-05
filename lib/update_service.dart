@@ -139,17 +139,18 @@ class ReleaseInfo {
     String? apkUrl;
     final body = json['body'] ?? '';
     
-    // 릴리즈 노트에서 Google Drive 링크 추출 (여러 패턴 시도)
+    // 릴리즈 노트에서 Google Drive 링크 추출 (마크다운 링크 패턴 포함)
     final googleDrivePatterns = [
-      RegExp(r'https://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)/[^)\s]*'),
-      RegExp(r'https://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)'),
-      RegExp(r'drive\.google\.com/file/d/([a-zA-Z0-9_-]+)'),
+      RegExp(r'\[.*?\]\((https://drive\.google\.com/file/d/[a-zA-Z0-9_-]+/[^\)]+)\)'),  // 마크다운 링크
+      RegExp(r'https://drive\.google\.com/file/d/[a-zA-Z0-9_-]+/[^\s\)]+'),  // 일반 URL
+      RegExp(r'drive\.google\.com/file/d/[a-zA-Z0-9_-]+/[^\s\)]+'),  // 프로토콜 없는 URL
     ];
     
     for (final pattern in googleDrivePatterns) {
       final match = pattern.firstMatch(body);
       if (match != null) {
-        apkUrl = match.group(0);
+        // 마크다운 링크인 경우 괄호 안의 URL만 추출
+        apkUrl = match.group(1) ?? match.group(0);
         // 완전한 URL이 아닌 경우 https:// 추가
         if (!apkUrl!.startsWith('https://')) {
           apkUrl = 'https://$apkUrl';
