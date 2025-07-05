@@ -68,13 +68,12 @@ class UpdateService {
       
       print('GitHub API 오류: ${response.statusCode}');
       // API 호출 실패 시 기본 다운로드 URL 사용
-      final packageInfo = await PackageInfo.fromPlatform();
       return UpdateCheckResult(
-        currentVersion: packageInfo.version,
-        latestVersion: '1.0.18',  // 최신 버전으로 업데이트
+        currentVersion: currentVersion,
+        latestVersion: '1.0.19',  // 최신 버전으로 업데이트
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '1.0.18',  // 최신 버전으로 업데이트
+          version: '1.0.19',  // 최신 버전으로 업데이트
           body: '최신 버전으로 업데이트해 주세요.',
           downloadUrl: _defaultDownloadUrl,
         ),
