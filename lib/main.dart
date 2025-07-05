@@ -9,6 +9,9 @@ import 'security_service.dart';
 import 'update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
+import 'auth_service.dart';
+import 'auth_setup_screen.dart';
+import 'login_screen.dart';
 
 // 글로벌 설정 상태 관리
 class AppSettings extends ChangeNotifier {
@@ -193,24 +196,17 @@ class DataService {
     await prefs.setBool(_isFirstLaunchKey, false);
   }
 
+  // PIN 관련 메서드들은 AuthService로 이동됨
   static Future<void> savePin(String pin) async {
-    final prefs = await SharedPreferences.getInstance();
-    final hashedPin = sha256.convert(utf8.encode(pin)).toString();
-    await prefs.setString(_pinKey, hashedPin);
+    await AuthService.savePin(pin);
   }
 
   static Future<bool> verifyPin(String pin) async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedPin = prefs.getString(_pinKey);
-    if (savedPin == null) return false;
-    
-    final hashedPin = sha256.convert(utf8.encode(pin)).toString();
-    return savedPin == hashedPin;
+    return await AuthService.verifyPin(pin);
   }
 
   static Future<bool> hasPinSet() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey(_pinKey);
+    return await AuthService.isPinSet();
   }
 
   static Future<List<Category>> getCategories() async {
@@ -376,6 +372,11 @@ class MyApp extends StatelessWidget {
           title: '안전한 메모장',
           debugShowCheckedModeBanner: false,
           themeMode: settings.themeMode,
+          routes: {
+            '/': (context) => MemoListScreen(),
+            '/auth-setup': (context) => AuthSetupScreen(),
+            '/login': (context) => LoginScreen(),
+          },
           theme: ThemeData(
             brightness: Brightness.light,
             primarySwatch: Colors.teal,
@@ -461,13 +462,15 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(Duration(seconds: 2));
     
     final isFirstLaunch = await DataService.isFirstLaunch();
-    final hasPinSet = await DataService.hasPinSet();
+    final isPinSet = await AuthService.isPinSet();
     
-    if (isFirstLaunch || !hasPinSet) {
+    if (isFirstLaunch || !isPinSet) {
+      // 최초 실행이거나 PIN이 설정되지 않은 경우 → 인증 설정 화면
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => PinSetupScreen()),
+        MaterialPageRoute(builder: (context) => AuthSetupScreen()),
       );
     } else {
+      // PIN이 설정되어 있는 경우 → 로그인 화면
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => LoginScreen()),
       );
@@ -533,325 +536,15 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-// PIN 설정 화면
-class PinSetupScreen extends StatefulWidget {
+// 기존 PIN 설정 및 로그인 화면은 새로운 AuthSetupScreen과 LoginScreen으로 대체됨
+
+// 메모 리스트 화면 (기존 CategoryListScreen)
+class MemoListScreen extends StatefulWidget {
   @override
-  _PinSetupScreenState createState() => _PinSetupScreenState();
+  _MemoListScreenState createState() => _MemoListScreenState();
 }
 
-class _PinSetupScreenState extends State<PinSetupScreen> {
-  final TextEditingController _pinController = TextEditingController();
-  final TextEditingController _confirmPinController = TextEditingController();
-  bool _isConfirming = false;
-  String _firstPin = '';
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.security,
-                        size: 80,
-                        color: Colors.teal,
-                      ),
-                      SizedBox(height: 30),
-                      Text(
-                        _isConfirming ? 'PIN 번호를 다시 입력하세요' : 'PIN 번호를 설정하세요',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        '4자리 숫자로 입력하세요',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white70,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 40),
-                      Center(
-                        child: Pinput(
-                          controller: _isConfirming ? _confirmPinController : _pinController,
-                          length: 4,
-                          obscureText: true,
-                          obscuringCharacter: '●',
-                          onCompleted: _onPinCompleted,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          defaultPinTheme: PinTheme(
-                            width: 60,
-                            height: 60,
-                            textStyle: TextStyle(
-                              fontSize: 20,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[700]!),
-                              borderRadius: BorderRadius.circular(8),
-                              color: Colors.grey[850],
-                            ),
-                          ),
-                          focusedPinTheme: PinTheme(
-                            width: 60,
-                            height: 60,
-                            textStyle: TextStyle(
-                              fontSize: 20,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.teal),
-                              borderRadius: BorderRadius.circular(8),
-                              color: Colors.grey[850],
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 30),
-                      if (_isConfirming)
-                        TextButton(
-                          onPressed: () {
-            setState(() {
-                              _isConfirming = false;
-                              _pinController.clear();
-                              _confirmPinController.clear();
-                            });
-                          },
-                          child: Text(
-                            '다시 입력',
-                            style: TextStyle(color: Colors.teal),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // 하단 카피라이트
-            Container(
-              padding: EdgeInsets.only(bottom: 30),
-              child: Text(
-                'Copyright (c) 2025 jiwoosoft. Powered by HaneulCCM.',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 11,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _onPinCompleted(String pin) {
-    if (!_isConfirming) {
-      _firstPin = pin;
-      setState(() {
-        _isConfirming = true;
-      });
-    } else {
-      if (_firstPin == pin) {
-        _savePin(pin);
-      } else {
-        _showErrorDialog('PIN이 일치하지 않습니다. 다시 시도해주세요.');
-        setState(() {
-          _isConfirming = false;
-          _pinController.clear();
-          _confirmPinController.clear();
-        });
-      }
-    }
-  }
-
-  void _savePin(String pin) async {
-    await DataService.savePin(pin);
-    await DataService.setNotFirstLaunch();
-    
-    // 🔧 PIN 설정 후 세션 PIN 설정 (메모 저장을 위해 필요)
-    DataService.setSessionPin(pin);
-    
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => CategoryListScreen()),
-    );
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-          backgroundColor: Colors.grey[850],
-        title: Text('오류', style: TextStyle(color: Colors.white)),
-        content: Text(message, style: TextStyle(color: Colors.white70)),
-          actions: [
-            TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('확인', style: TextStyle(color: Colors.teal)),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// 로그인 화면
-class LoginScreen extends StatefulWidget {
-  @override
-  _LoginScreenState createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _pinController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.lock_outline,
-                        size: 80,
-                        color: Colors.teal,
-                      ),
-                      SizedBox(height: 30),
-                      Text(
-                        'PIN 번호를 입력하세요',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 40),
-                      Center(
-                        child: Pinput(
-                          controller: _pinController,
-                          length: 4,
-                          obscureText: true,
-                          obscuringCharacter: '●',
-                          onCompleted: _onPinCompleted,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          defaultPinTheme: PinTheme(
-                            width: 60,
-                            height: 60,
-                            textStyle: TextStyle(
-                              fontSize: 20,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[700]!),
-                              borderRadius: BorderRadius.circular(8),
-                              color: Colors.grey[850],
-                            ),
-                          ),
-                          focusedPinTheme: PinTheme(
-                            width: 60,
-                            height: 60,
-                            textStyle: TextStyle(
-                              fontSize: 20,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.teal),
-                              borderRadius: BorderRadius.circular(8),
-                              color: Colors.grey[850],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // 하단 카피라이트
-            Container(
-              padding: EdgeInsets.only(bottom: 30),
-              child: Text(
-                'Copyright (c) 2025 jiwoosoft. Powered by HaneulCCM.',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 11,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _onPinCompleted(String pin) async {
-    final isValid = await DataService.verifyPin(pin);
-    if (isValid) {
-      // 보안 강화: PIN 인증 성공 후 세션에 PIN 저장
-      DataService.setSessionPin(pin);
-      
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => CategoryListScreen()),
-      );
-    } else {
-      _pinController.clear();
-      _showErrorDialog('잘못된 PIN 번호입니다.');
-    }
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[850],
-        title: Text('오류', style: TextStyle(color: Colors.white)),
-        content: Text(message, style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('확인', style: TextStyle(color: Colors.teal)),
-            ),
-          ],
-      ),
-        );
-  }
-}
-
-// 카테고리 리스트 화면
-class CategoryListScreen extends StatefulWidget {
-  @override
-  _CategoryListScreenState createState() => _CategoryListScreenState();
-}
-
-class _CategoryListScreenState extends State<CategoryListScreen> {
+class _MemoListScreenState extends State<MemoListScreen> {
   List<Category> categories = [];
   List<Category> filteredCategories = [];
   bool _isEditMode = false;
@@ -2227,6 +1920,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           Divider(color: dividerColor),
           ListTile(
+            leading: Icon(Icons.fingerprint, color: Colors.teal),
+            title: Text('인증 방법', style: TextStyle(color: textColor)),
+            subtitle: Text('PIN 또는 생체인증 방법을 선택하세요', style: TextStyle(color: subtitleColor)),
+            trailing: Icon(Icons.arrow_forward_ios, color: subtitleColor),
+            onTap: () => _showAuthMethodDialog(context),
+          ),
+          Divider(color: dividerColor),
+          ListTile(
             leading: Icon(Icons.palette, color: Colors.teal),
             title: Text('테마 설정', style: TextStyle(color: textColor)),
             subtitle: Text('다크 테마', style: TextStyle(color: subtitleColor)),
@@ -2375,6 +2076,114 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showAuthMethodDialog(BuildContext context) async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+    final backgroundColor = isDarkMode ? Colors.grey[850] : Colors.white;
+    
+    // 현재 인증 방법과 생체인증 사용 가능 여부 확인
+    final currentAuthMethod = await AuthService.getAuthMethod();
+    final biometricAvailable = await AuthService.isBiometricAvailable();
+    final availableBiometrics = await AuthService.getAvailableBiometrics();
+    
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: backgroundColor,
+          title: Text('인증 방법 설정', style: TextStyle(color: textColor)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '앱 실행 시 사용할 인증 방법을 선택하세요',
+                style: TextStyle(color: textColor, fontSize: 14),
+              ),
+              SizedBox(height: 16),
+              
+              // PIN 인증 옵션
+              RadioListTile<AuthMethod>(
+                title: Text('PIN 번호', style: TextStyle(color: textColor)),
+                subtitle: Text('4자리 숫자로 인증', style: TextStyle(color: textColor.withOpacity(0.7))),
+                value: AuthMethod.pin,
+                groupValue: currentAuthMethod,
+                onChanged: (AuthMethod? value) async {
+                  if (value != null) {
+                    await AuthService.setAuthMethod(value);
+                    await AuthService.setBiometricEnabled(false);
+                    Navigator.pop(context);
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('PIN 인증으로 설정되었습니다.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+              ),
+              
+              // 생체인증 옵션
+              RadioListTile<AuthMethod>(
+                title: Text(
+                  availableBiometrics.isNotEmpty
+                      ? availableBiometrics.map((type) => 
+                          AuthService.getBiometricTypeDisplayName(type)).join(', ')
+                      : '생체인증',
+                  style: TextStyle(
+                    color: biometricAvailable ? textColor : textColor.withOpacity(0.5),
+                  ),
+                ),
+                subtitle: Text(
+                  biometricAvailable 
+                      ? '생체인증으로 빠르고 안전하게 인증'
+                      : '이 기기에서는 생체인증을 사용할 수 없습니다',
+                  style: TextStyle(color: textColor.withOpacity(0.7)),
+                ),
+                value: AuthMethod.biometric,
+                groupValue: currentAuthMethod,
+                onChanged: biometricAvailable ? (AuthMethod? value) async {
+                  if (value != null) {
+                    // 생체인증 테스트
+                    final authenticated = await AuthService.authenticateWithBiometric();
+                    if (authenticated) {
+                      await AuthService.setAuthMethod(value);
+                      await AuthService.setBiometricEnabled(true);
+                      Navigator.pop(context);
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('생체인증으로 설정되었습니다.'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('생체인증에 실패했습니다. 설정이 변경되지 않았습니다.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                } : null,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: Text('취소', style: TextStyle(color: Colors.teal)),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showLicenseDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -2396,6 +2205,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
               onPressed: () {
+              // 세션 PIN 클리어
+              DataService.clearSessionPin();
+              
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => LoginScreen()),
                 (Route<dynamic> route) => false,

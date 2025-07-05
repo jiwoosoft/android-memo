@@ -3,7 +3,7 @@ description: "간단한 메모장"
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.40+41
+version: 2.0.1+43
 
 environment:
   sdk: ^3.8.1
@@ -20,6 +20,8 @@ dependencies:
   package_info_plus: ^4.2.0
   http: ^1.1.0
   url_launcher: ^6.2.2
+  local_auth: ^2.1.8  # 지문인증을 위한 패키지
+  flutter_secure_storage: ^9.0.0  # 보안 저장소
 
 dev_dependencies:
   flutter_test:
