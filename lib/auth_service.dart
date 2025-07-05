@@ -50,7 +50,7 @@ class AuthService {
       
       // 1. SharedPreferences에 해시된 PIN 저장
       final prefs = await SharedPreferences.getInstance();
-      final hashedPin = sha256.convert(utf8.encode(pin, allowMalformed: false)).toString();
+      final hashedPin = sha256.convert(utf8.encode(pin)).toString();
       await prefs.setString(_pinKey, hashedPin);
       
       // 2. FlutterSecureStorage에 원본 PIN 저장 (추가 보안)
@@ -86,7 +86,7 @@ class AuthService {
       print('🔒 저장된 해시: ${storedHashedPin ?? 'null'}');
       
       if (storedHashedPin != null) {
-        final hashedPin = sha256.convert(utf8.encode(pin, allowMalformed: false)).toString();
+        final hashedPin = sha256.convert(utf8.encode(pin)).toString();
         print('🔒 입력 PIN 해시: $hashedPin');
         
         if (storedHashedPin == hashedPin) {
@@ -102,7 +102,7 @@ class AuthService {
       if (securePin != null && securePin == pin) {
         print('✅ 2차 검증 성공 (원본 일치)');
         // 해시 저장이 깨진 경우 복구
-        await prefs.setString(_pinKey, sha256.convert(utf8.encode(pin, allowMalformed: false)).toString());
+        await prefs.setString(_pinKey, sha256.convert(utf8.encode(pin)).toString());
         print('🔧 해시 복구 완료');
         return true;
       }
