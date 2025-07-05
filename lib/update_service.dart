@@ -6,8 +6,11 @@ import 'package:package_info_plus/package_info_plus.dart';
 class UpdateService {
   // GitHub 저장소 정보
   static const String _owner = 'jiwoosoft';
-  static const String _repo = 'secure-memo';
+  static const String _repo = 'android-memo';
   static const String _apiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases/latest';
+  
+  // 기본 다운로드 URL (최신 APK가 있는 Google Drive 링크)
+  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1acuvBJCRUBWDJaxRA97aT8rx_AB_mKFY/view?usp=drivesdk';
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
@@ -18,28 +21,35 @@ class UpdateService {
       // GitHub API 호출
       final response = await http.get(
         Uri.parse(_apiUrl),
-        headers: {'Accept': 'application/vnd.github.v3+json'},
-      );
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'SecureMemoApp/1.0',
+        },
+      ).timeout(Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final latestVersion = data['tag_name'].toString().replaceAll('v', '');
         
-        // 다운로드 URL 찾기
-        String? downloadUrl;
-        final assets = data['assets'] as List;
-        for (var asset in assets) {
-          if (asset['name'].toString().endsWith('.apk')) {
-            downloadUrl = asset['browser_download_url'];
-            break;
+        // 다운로드 URL 찾기 (GitHub 릴리즈 또는 Google Drive)
+        String downloadUrl = _defaultDownloadUrl;  // 기본값 설정
+        
+        // 1. GitHub 릴리즈 에셋에서 APK 찾기
+        if (data['assets'] != null && data['assets'] is List) {
+          final assets = data['assets'] as List;
+          for (var asset in assets) {
+            if (asset['name'].toString().endsWith('.apk')) {
+              downloadUrl = asset['browser_download_url'];
+              break;
+            }
           }
         }
-
-        // Google Drive 링크가 있는지 확인
-        final body = data['body'] as String;
-        final driveUrlMatch = RegExp(r'https://drive\.google\.com/[^\s\)]+').firstMatch(body);
+        
+        // 2. 릴리즈 노트에서 Google Drive 링크 찾기
+        final body = data['body'] as String? ?? '';
+        final driveUrlMatch = RegExp(r'https://drive\.google\.com/file/d/[a-zA-Z0-9_-]+/[^\s\)]+').firstMatch(body);
         if (driveUrlMatch != null) {
-          downloadUrl = driveUrlMatch.group(0);
+          downloadUrl = driveUrlMatch.group(0)!;
         }
 
         final hasUpdate = _compareVersions(currentVersion, latestVersion) < 0;
@@ -48,18 +58,39 @@ class UpdateService {
           currentVersion: currentVersion,
           latestVersion: latestVersion,
           hasUpdate: hasUpdate,
-          releaseInfo: hasUpdate ? ReleaseInfo(
+          releaseInfo: ReleaseInfo(
             version: latestVersion,
-            body: data['body'],
+            body: data['body'] ?? '업데이트 정보가 없습니다.',
             downloadUrl: downloadUrl,
-          ) : null,
+          ),
         );
       } else {
-        throw Exception('GitHub API 호출 실패: ${response.statusCode}');
+        print('GitHub API 오류: ${response.statusCode}');
+        // API 호출 실패 시 기본 다운로드 URL 사용
+        return UpdateCheckResult(
+          currentVersion: currentVersion,
+          latestVersion: currentVersion,
+          hasUpdate: true,  // 강제 업데이트 표시
+          releaseInfo: ReleaseInfo(
+            version: '1.0.14',
+            body: '최신 버전으로 업데이트해 주세요.',
+            downloadUrl: _defaultDownloadUrl,
+          ),
+        );
       }
     } catch (e) {
       print('업데이트 확인 오류: $e');
-      rethrow;
+      final packageInfo = await PackageInfo.fromPlatform();
+      return UpdateCheckResult(
+        currentVersion: packageInfo.version,
+        latestVersion: packageInfo.version,
+        hasUpdate: true,  // 강제 업데이트 표시
+        releaseInfo: ReleaseInfo(
+          version: '1.0.14',
+          body: '최신 버전으로 업데이트해 주세요.',
+          downloadUrl: _defaultDownloadUrl,
+        ),
+      );
     }
   }
 
@@ -84,24 +115,24 @@ class UpdateCheckResult {
   final String currentVersion;
   final String latestVersion;
   final bool hasUpdate;
-  final ReleaseInfo? releaseInfo;
+  final ReleaseInfo releaseInfo;
 
   UpdateCheckResult({
     required this.currentVersion,
     required this.latestVersion,
     required this.hasUpdate,
-    this.releaseInfo,
+    required this.releaseInfo,
   });
 }
 
 class ReleaseInfo {
   final String version;
   final String body;
-  final String? downloadUrl;
+  final String downloadUrl;
 
   ReleaseInfo({
     required this.version,
     required this.body,
-    this.downloadUrl,
+    required this.downloadUrl,
   });
 } 
