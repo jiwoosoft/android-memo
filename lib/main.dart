@@ -2459,7 +2459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               '최신 버전: ${result.latestVersion}',
               style: TextStyle(color: Colors.white70),
             ),
-            if (result.releaseInfo?.body != null) ...[
+            if (result.releaseInfo.body.isNotEmpty) ...[
               SizedBox(height: 16),
               Text(
                 '업데이트 내용:',
@@ -2467,7 +2467,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               SizedBox(height: 8),
               Text(
-                result.releaseInfo!.body,
+                result.releaseInfo.body,
                 style: TextStyle(color: Colors.white70),
               ),
             ],
@@ -2480,16 +2480,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () async {
-              if (result.releaseInfo?.downloadUrl != null) {
-                final url = Uri.parse(result.releaseInfo!.downloadUrl!);
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(
-                    url,
-                    mode: LaunchMode.externalApplication,
-                  );
-                }
-              }
               Navigator.pop(context);
+              try {
+                if (await canLaunch(result.releaseInfo.downloadUrl)) {
+                  await launch(result.releaseInfo.downloadUrl);
+                } else {
+                  throw '다운로드 URL을 열 수 없습니다.';
+                }
+              } catch (e) {
+                print('다운로드 URL 열기 실패: $e');
+                if (!mounted) return;
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('업데이트 파일을 다운로드할 수 없습니다.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             child: Text('업데이트', style: TextStyle(color: Colors.teal)),
           ),

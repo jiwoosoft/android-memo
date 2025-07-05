@@ -64,20 +64,21 @@ class UpdateService {
             downloadUrl: downloadUrl,
           ),
         );
-      } else {
-        print('GitHub API 오류: ${response.statusCode}');
-        // API 호출 실패 시 기본 다운로드 URL 사용
-        return UpdateCheckResult(
-          currentVersion: currentVersion,
-          latestVersion: currentVersion,
-          hasUpdate: true,  // 강제 업데이트 표시
-          releaseInfo: ReleaseInfo(
-            version: '1.0.14',
-            body: '최신 버전으로 업데이트해 주세요.',
-            downloadUrl: _defaultDownloadUrl,
-          ),
-        );
       }
+      
+      print('GitHub API 오류: ${response.statusCode}');
+      // API 호출 실패 시 기본 다운로드 URL 사용
+      final packageInfo = await PackageInfo.fromPlatform();
+      return UpdateCheckResult(
+        currentVersion: packageInfo.version,
+        latestVersion: '1.0.18',  // 최신 버전으로 업데이트
+        hasUpdate: true,  // 강제 업데이트 표시
+        releaseInfo: ReleaseInfo(
+          version: '1.0.18',  // 최신 버전으로 업데이트
+          body: '최신 버전으로 업데이트해 주세요.',
+          downloadUrl: _defaultDownloadUrl,
+        ),
+      );
     } catch (e) {
       print('업데이트 확인 오류: $e');
       final packageInfo = await PackageInfo.fromPlatform();

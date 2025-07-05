@@ -3,7 +3,7 @@ description: "간단한 메모장"
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.18+19
+version: 1.0.19+20
 
 environment:
   sdk: ^3.8.1
@@ -17,9 +17,9 @@ dependencies:
   crypto: ^3.0.3
   pinput: ^4.0.0
   expandable: ^5.0.1
-  package_info_plus: ^5.0.1
-  http: ^1.2.0
-  url_launcher: ^6.2.4
+  package_info_plus: ^4.2.0
+  http: ^1.1.0
+  url_launcher: ^6.2.2
 
 dev_dependencies:
   flutter_test:
