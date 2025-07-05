@@ -1468,7 +1468,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
               : Colors.black.withOpacity(0.5),
           color: Theme.of(context).brightness == Brightness.light 
               ? Colors.white  // 라이트 모드: 순백색 (카테고리)
-              : Colors.grey[850],  // 다크 모드: 진한 회색 (카테고리)
+              : Colors.grey[800],  // 다크 모드: 밝은 회색 (카테고리)
           child: ExpandablePanel(
             theme: ExpandableThemeData(
               iconColor: Theme.of(context).brightness == Brightness.light 
@@ -1611,7 +1611,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.light 
             ? Colors.blue[50]  // 라이트 모드: 연한 파란색 (메모 리스트)
-            : Colors.grey[900],  // 다크 모드: 더 진한 회색 (메모 리스트)
+            : Colors.black,  // 다크 모드: 순검은색 (메모 리스트)
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(4),
           bottomRight: Radius.circular(4),
@@ -1648,7 +1648,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             child: Container(
               color: Theme.of(context).brightness == Brightness.light 
                   ? Colors.blue[25]  // 라이트 모드: 매우 연한 파란색 (개별 메모)
-                  : Colors.grey[850],  // 다크 모드: 카테고리보다 밝은 회색 (개별 메모)
+                  : Colors.grey[900],  // 다크 모드: 진한 회색 (개별 메모)
               child: ListTile(
                 leading: Icon(Icons.note, color: Colors.teal, size: 20),
                 title: Text(
