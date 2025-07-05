@@ -10,13 +10,16 @@ class UpdateService {
   static const String _apiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases/latest';
   
   // 기본 다운로드 URL (최신 APK가 있는 Google Drive 링크)
-  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1acuvBJCRUBWDJaxRA97aT8rx_AB_mKFY/view?usp=drivesdk';
+  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1Oybxwu2njbXe1-s8k4kOu6XJMSf2dH4w/view?usp=drivesdk';
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
       // 현재 앱 버전 정보 가져오기
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
+
+      print('현재 버전: $currentVersion');
+      print('GitHub API 호출 중...');
 
       // GitHub API 호출
       final response = await http.get(
@@ -27,9 +30,13 @@ class UpdateService {
         },
       ).timeout(Duration(seconds: 10));
 
+      print('GitHub API 응답: ${response.statusCode}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final latestVersion = data['tag_name'].toString().replaceAll('v', '');
+        
+        print('최신 버전: $latestVersion');
         
         // 다운로드 URL 찾기 (GitHub 릴리즈 또는 Google Drive)
         String downloadUrl = _defaultDownloadUrl;  // 기본값 설정
@@ -54,6 +61,9 @@ class UpdateService {
 
         final hasUpdate = _compareVersions(currentVersion, latestVersion) < 0;
         
+        print('업데이트 필요: $hasUpdate');
+        print('다운로드 URL: $downloadUrl');
+        
         return UpdateCheckResult(
           currentVersion: currentVersion,
           latestVersion: latestVersion,
@@ -67,14 +77,15 @@ class UpdateService {
       }
       
       print('GitHub API 오류: ${response.statusCode}');
+      print('응답 내용: ${response.body}');
       // API 호출 실패 시 기본 다운로드 URL 사용
       return UpdateCheckResult(
         currentVersion: currentVersion,
-        latestVersion: '1.0.19',  // 최신 버전으로 업데이트
+        latestVersion: '1.0.22',  // 최신 버전으로 업데이트
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '1.0.19',  // 최신 버전으로 업데이트
-          body: '최신 버전으로 업데이트해 주세요.',
+          version: '1.0.22',  // 최신 버전으로 업데이트
+          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 개선\n- 라이트 모드 텍스트 색상 수정\n- 카테고리와 메모 구분 개선',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
@@ -83,11 +94,11 @@ class UpdateService {
       final packageInfo = await PackageInfo.fromPlatform();
       return UpdateCheckResult(
         currentVersion: packageInfo.version,
-        latestVersion: packageInfo.version,
+        latestVersion: '1.0.22',  // 최신 버전으로 업데이트
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '1.0.14',
-          body: '최신 버전으로 업데이트해 주세요.',
+          version: '1.0.22',
+          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 개선\n- 라이트 모드 텍스트 색상 수정\n- 카테고리와 메모 구분 개선',
           downloadUrl: _defaultDownloadUrl,
         ),
       );

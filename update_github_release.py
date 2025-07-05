@@ -19,12 +19,24 @@ GITHUB_OWNER = "jiwoosoft"
 GITHUB_REPO = "android-memo"
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # 환경변수에서 토큰 가져오기
 
-def get_release_by_tag(tag_name):
+def get_github_token():
+    """GitHub 토큰 가져오기"""
+    token = os.getenv('GITHUB_TOKEN')
+    if not token:
+        print("❌ GITHUB_TOKEN 환경변수가 설정되지 않았습니다.")
+        print("GitHub Personal Access Token을 입력하세요:")
+        token = input("토큰: ").strip()
+        if not token:
+            print("❌ 토큰이 입력되지 않았습니다.")
+            sys.exit(1)
+    return token
+
+def get_release_by_tag(tag_name, token):
     """태그로 릴리즈 정보 가져오기"""
     url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/tags/{tag_name}"
     
     headers = {
-        'Authorization': f'token {GITHUB_TOKEN}',
+        'Authorization': f'token {token}',
         'Accept': 'application/vnd.github.v3+json',
     }
     
@@ -40,12 +52,12 @@ def get_release_by_tag(tag_name):
         print(f"❌ API 호출 오류: {e}")
         return None
 
-def update_release_body(release_id, new_body):
+def update_release_body(release_id, new_body, token):
     """릴리즈 노트 업데이트"""
     url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/{release_id}"
     
     headers = {
-        'Authorization': f'token {GITHUB_TOKEN}',
+        'Authorization': f'token {token}',
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
     }
@@ -136,17 +148,12 @@ def main():
     google_drive_link = sys.argv[2]
     
     # GitHub 토큰 확인
-    if not GITHUB_TOKEN:
-        print("❌ GITHUB_TOKEN 환경변수가 설정되지 않았습니다.")
-        print("GitHub Personal Access Token을 설정하세요:")
-        print("Windows: set GITHUB_TOKEN=your_token_here")
-        print("Linux/Mac: export GITHUB_TOKEN=your_token_here")
-        sys.exit(1)
+    GITHUB_TOKEN = get_github_token()
     
     print(f"🔍 GitHub 릴리즈 {tag_name} 정보 가져오는 중...")
     
     # 릴리즈 정보 가져오기
-    release_info = get_release_by_tag(tag_name)
+    release_info = get_release_by_tag(tag_name, GITHUB_TOKEN)
     if not release_info:
         print(f"❌ 릴리즈 {tag_name}을 찾을 수 없습니다.")
         sys.exit(1)
@@ -171,7 +178,7 @@ def main():
     
     # 릴리즈 업데이트
     print(f"🔄 GitHub 릴리즈 {tag_name} 업데이트 중...")
-    updated_release = update_release_body(release_info['id'], new_body)
+    updated_release = update_release_body(release_info['id'], new_body, GITHUB_TOKEN)
     
     if updated_release:
         print(f"✅ 릴리즈 노트 업데이트 성공!")
