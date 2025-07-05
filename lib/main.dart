@@ -1462,7 +1462,13 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         final category = displayCategories[index];
         return Card(
           margin: EdgeInsets.only(bottom: 12),
-          elevation: 2,
+          elevation: Theme.of(context).brightness == Brightness.light ? 4 : 2,
+          shadowColor: Theme.of(context).brightness == Brightness.light 
+              ? Colors.grey.withOpacity(0.3) 
+              : Colors.black.withOpacity(0.5),
+          color: Theme.of(context).brightness == Brightness.light 
+              ? Colors.white  // 라이트 모드: 순백색 (카테고리)
+              : Colors.grey[850],  // 다크 모드: 진한 회색 (카테고리)
           child: ExpandablePanel(
             header: ListTile(
               leading: Icon(
@@ -1596,8 +1602,8 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.light 
-            ? Colors.grey[100] 
-            : Colors.grey[900],
+            ? Colors.blue[50]  // 라이트 모드: 연한 파란색 (메모 리스트)
+            : Colors.grey[900],  // 다크 모드: 더 진한 회색 (메모 리스트)
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(4),
           bottomRight: Radius.circular(4),
@@ -1631,16 +1637,20 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                 ),
               ),
             ),
-            child: ListTile(
-              leading: Icon(Icons.note, color: Colors.teal, size: 20),
-              title: Text(
-                memo.title.isEmpty ? '제목 없음' : memo.title,
-                style: TextStyle(
-                  color: Theme.of(context).brightness == Brightness.light 
-                      ? Colors.black87 
-                      : Colors.white,
+            child: Container(
+              color: Theme.of(context).brightness == Brightness.light 
+                  ? Colors.blue[25]  // 라이트 모드: 매우 연한 파란색 (개별 메모)
+                  : Colors.grey[850],  // 다크 모드: 카테고리보다 밝은 회색 (개별 메모)
+              child: ListTile(
+                leading: Icon(Icons.note, color: Colors.teal, size: 20),
+                title: Text(
+                  memo.title.isEmpty ? '제목 없음' : memo.title,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.light 
+                        ? Colors.black87 
+                        : Colors.white,
+                  ),
                 ),
-              ),
               subtitle: memo.tags.isNotEmpty 
                   ? Wrap(
                       spacing: 4,
@@ -1699,6 +1709,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                 ],
               ),
               onTap: () => _viewMemo(category, memo),
+              ),
             ),
           );
         },
