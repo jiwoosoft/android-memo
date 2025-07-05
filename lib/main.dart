@@ -338,6 +338,19 @@ class DataService {
     _sessionPin = null;
   }
 
+  /// 모든 앱 데이터 삭제 (초기화용)
+  static Future<void> clearAllData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      _sessionPin = null;
+      print('✅ 모든 앱 데이터가 삭제되었습니다.');
+    } catch (e) {
+      print('❌ 데이터 삭제 중 오류: $e');
+      rethrow;
+    }
+  }
+
   static List<Category> _getDefaultCategories() {
     return [
       Category(
