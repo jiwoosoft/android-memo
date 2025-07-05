@@ -10,7 +10,7 @@ class UpdateService {
   static const String _apiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases/latest';
   
   // 기본 다운로드 URL (최신 APK가 있는 Google Drive 링크)
-  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1Oybxwu2njbXe1-s8k4kOu6XJMSf2dH4w/view?usp=drivesdk';
+  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1vn7Ksi2Kb9x60k9cqYi-JTKW_ktO_E7t/view?usp=drivesdk';
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
@@ -81,11 +81,11 @@ class UpdateService {
       // API 호출 실패 시 기본 다운로드 URL 사용
       return UpdateCheckResult(
         currentVersion: currentVersion,
-        latestVersion: '1.0.22',  // 최신 버전으로 업데이트
+        latestVersion: '1.0.29',  // 최신 버전으로 업데이트
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '1.0.22',  // 최신 버전으로 업데이트
-          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 개선\n- 라이트 모드 텍스트 색상 수정\n- 카테고리와 메모 구분 개선',
+          version: '1.0.29',  // 최신 버전으로 업데이트
+          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 완전 수정\n- 디버깅 기능 추가\n- 라이트 모드 텍스트 색상 개선',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
@@ -94,11 +94,11 @@ class UpdateService {
       final packageInfo = await PackageInfo.fromPlatform();
       return UpdateCheckResult(
         currentVersion: packageInfo.version,
-        latestVersion: '1.0.22',  // 최신 버전으로 업데이트
+        latestVersion: '1.0.29',  // 최신 버전으로 업데이트
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '1.0.22',
-          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 개선\n- 라이트 모드 텍스트 색상 수정\n- 카테고리와 메모 구분 개선',
+          version: '1.0.29',
+          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 완전 수정\n- 디버깅 기능 추가\n- 라이트 모드 텍스트 색상 개선',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
