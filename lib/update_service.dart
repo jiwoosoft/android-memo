@@ -81,11 +81,11 @@ class UpdateService {
       // API 호출 실패 시 기본 다운로드 URL 사용
       return UpdateCheckResult(
         currentVersion: currentVersion,
-        latestVersion: '1.0.34',  // v1.0.33 사용자를 위한 올바른 최신 버전
+        latestVersion: '1.0.36',  // v1.0.35 사용자를 위한 업데이트 버전
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '1.0.34',  // v1.0.33 사용자를 위한 올바른 최신 버전
-          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 카테고리와 메모 리스트 색상 구별 개선\n- 라이트 모드 UI 가시성 대폭 향상\n- 업데이트 기능 완전 안정화',
+          version: '1.0.36',  // v1.0.35 사용자를 위한 업데이트 버전
+          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 테스트 완료\n- 카테고리와 메모 리스트 색상 구별 개선\n- 모든 기능 안정화 완료',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
@@ -94,11 +94,11 @@ class UpdateService {
       final packageInfo = await PackageInfo.fromPlatform();
       return UpdateCheckResult(
         currentVersion: packageInfo.version,
-        latestVersion: '1.0.34',  // v1.0.33 사용자를 위한 올바른 최신 버전
+        latestVersion: '1.0.36',  // v1.0.35 사용자를 위한 업데이트 버전
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '1.0.34',
-          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 카테고리와 메모 리스트 색상 구별 개선\n- 라이트 모드 UI 가시성 대폭 향상\n- 업데이트 기능 완전 안정화',
+          version: '1.0.36',
+          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 테스트 완료\n- 카테고리와 메모 리스트 색상 구별 개선\n- 모든 기능 안정화 완료',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
