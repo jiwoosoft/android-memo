@@ -2,13 +2,13 @@
 
 ## 📲 APK 다운로드
 
-### 🚀 최신 버전 (v1.0.6)
-**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1BPtLwbeEWiPGvCRMpajAcj1hfofyPO1I/view?usp=drivesdk)** | **[📋 릴리즈 노트](https://github.com/jiwoosoft/android-memo/releases)**
+### 🚀 최신 버전 (v1.0.10)
+**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1AkRqk-TpzCw6_26sbn2xoOxQIQYuFEE1/view?usp=drivesdk)** | **[📋 릴리즈 노트](https://github.com/jiwoosoft/android-memo/releases)**
 
 - **파일 크기**: 62.9MB
 - **Android 요구사항**: 5.0+ (API 21+)
 - **패키지명**: `com.jiwoosoft.secure_memo`
-- **최종 업데이트**: 2025.07.04
+- **최종 업데이트**: 2025.07.05
 
 > 📝 **Google Drive 다운로드 방법**: 링크 클릭 → 우상단 다운로드 버튼 클릭
 
