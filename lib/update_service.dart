@@ -10,7 +10,7 @@ class UpdateService {
   static const String _apiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases/latest';
   
   // 기본 다운로드 URL (최신 APK가 있는 Google Drive 링크)
-  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1kUDrqvDwu8E7xFG-pBt3dszxdTw_hJRQ/view?usp=drivesdk';
+  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1IkvTXJtj4t0yqBWnTF7fe5V2hJCMRfT6/view?usp=drivesdk';
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
@@ -81,11 +81,11 @@ class UpdateService {
       // API 호출 실패 시 기본 다운로드 URL 사용
       return UpdateCheckResult(
         currentVersion: currentVersion,
-        latestVersion: '1.0.32',  // v1.0.28 사용자를 위한 올바른 최신 버전
+        latestVersion: '1.0.34',  // v1.0.33 사용자를 위한 올바른 최신 버전
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '1.0.32',  // v1.0.28 사용자를 위한 올바른 최신 버전
-          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 완전 수정\n- URL 실행 안정성 대폭 개선\n- 다중 브라우저 지원으로 호환성 향상\n- Google Drive 링크 오류 수정',
+          version: '1.0.34',  // v1.0.33 사용자를 위한 올바른 최신 버전
+          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 카테고리와 메모 리스트 색상 구별 개선\n- 라이트 모드 UI 가시성 대폭 향상\n- 업데이트 기능 완전 안정화',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
@@ -94,11 +94,11 @@ class UpdateService {
       final packageInfo = await PackageInfo.fromPlatform();
       return UpdateCheckResult(
         currentVersion: packageInfo.version,
-        latestVersion: '1.0.32',  // v1.0.28 사용자를 위한 올바른 최신 버전
+        latestVersion: '1.0.34',  // v1.0.33 사용자를 위한 올바른 최신 버전
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '1.0.32',
-          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 업데이트 기능 완전 수정\n- URL 실행 안정성 대폭 개선\n- 다중 브라우저 지원으로 호환성 향상\n- Google Drive 링크 오류 수정',
+          version: '1.0.34',
+          body: '최신 버전으로 업데이트해 주세요.\n\n주요 변경사항:\n- 카테고리와 메모 리스트 색상 구별 개선\n- 라이트 모드 UI 가시성 대폭 향상\n- 업데이트 기능 완전 안정화',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
