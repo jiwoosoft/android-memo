@@ -2,10 +2,10 @@
 
 ## 📥 다운로드
 
-[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1wn4lCWNNk8pNQJDQG-fLuxTNjizt1Imm/view?usp=drivesdk)
+[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1p2_AzvgqgYLH2PKm1s8jHhRY4QXyfPLQ/view?usp=drivesdk)
 
-### 🚀 최신 버전 (v2.0.1) - MAJOR 업데이트
-- **버전**: v2.0.1+43
+### 🚀 최신 버전 (v2.0.2) - 업데이트 서비스 수정
+- **버전**: v2.0.2+44
 - **크기**: 64.0MB
 - **최종 업데이트**: 2025.07.06
 - **주요 변경**: 지문인증 시스템 추가

@@ -81,10 +81,10 @@ class UpdateService {
       // API 호출 실패 시 기본 다운로드 URL 사용
       return UpdateCheckResult(
         currentVersion: currentVersion,
-        latestVersion: '2.0.1',  // v2.0+ 지문인증 시스템 업데이트
+        latestVersion: '2.0.2',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 수정)
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '2.0.1',  // v2.0+ 지문인증 시스템 업데이트
+          version: '2.0.2',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 수정)
           body: '🔐 MAJOR 업데이트 - 지문인증 시스템 추가!\n\n주요 변경사항:\n- 🔒 지문인증 시스템 추가 (PIN + 생체인증)\n- ⚙️ 인증 방법 설정 (PIN ↔ 지문인증 전환)\n- 🔄 자동 생체인증 (앱 시작 시)\n- 🛡️ 보안 강화 (Flutter Secure Storage)\n- 🎨 새로운 인증 UI\n\n⚠️ Major 업데이트로 새로설치 권장',
           downloadUrl: _defaultDownloadUrl,
         ),
@@ -94,10 +94,10 @@ class UpdateService {
       final packageInfo = await PackageInfo.fromPlatform();
       return UpdateCheckResult(
         currentVersion: packageInfo.version,
-        latestVersion: '2.0.1',  // v2.0+ 지문인증 시스템 업데이트
+        latestVersion: '2.0.2',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 수정)
         hasUpdate: true,  // 강제 업데이트 표시
         releaseInfo: ReleaseInfo(
-          version: '2.0.1',
+          version: '2.0.2',
           body: '🔐 MAJOR 업데이트 - 지문인증 시스템 추가!\n\n주요 변경사항:\n- 🔒 지문인증 시스템 추가 (PIN + 생체인증)\n- ⚙️ 인증 방법 설정 (PIN ↔ 지문인증 전환)\n- 🔄 자동 생체인증 (앱 시작 시)\n- 🛡️ 보안 강화 (Flutter Secure Storage)\n- 🎨 새로운 인증 UI\n\n⚠️ Major 업데이트로 새로설치 권장',
           downloadUrl: _defaultDownloadUrl,
         ),
