@@ -235,6 +235,85 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// 디버그 정보 표시 (문제 해결용)
+  Future<void> _showDebugInfo() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedPin = prefs.getString('user_pin');
+      final authMethod = await AuthService.getAuthMethod();
+      final isPinSet = await AuthService.isPinSet();
+      
+      final debugInfo = '''
+🔍 디버그 정보:
+
+📱 PIN 설정 상태: $isPinSet
+🔐 저장된 PIN: "${storedPin ?? 'null'}"
+📏 PIN 길이: ${storedPin?.length ?? 0}
+🔧 인증 방법: $authMethod
+🎯 현재 인증 방법: $_currentAuthMethod
+
+📝 테스트해보세요:
+1. PIN 입력: "${_pinController.text}"
+2. 입력 길이: ${_pinController.text.length}
+''';
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('🐛 디버그 정보'),
+          content: SingleChildScrollView(
+            child: Text(
+              debugInfo,
+              style: const TextStyle(fontFamily: 'monospace'),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('닫기'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _testPinVerification();
+              },
+              child: const Text('PIN 검증 테스트'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      _showErrorMessage('디버그 정보 조회 실패: $e');
+    }
+  }
+
+  /// PIN 검증 테스트
+  Future<void> _testPinVerification() async {
+    final testPin = _pinController.text;
+    if (testPin.isEmpty) {
+      _showErrorMessage('PIN을 입력해주세요');
+      return;
+    }
+
+    try {
+      print('🧪 [TEST] PIN 검증 테스트 시작: "$testPin"');
+      final result = await AuthService.verifyPin(testPin);
+      print('🧪 [TEST] 검증 결과: $result');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result ? '✅ PIN 검증 성공!' : '❌ PIN 검증 실패!',
+          ),
+          backgroundColor: result ? Colors.green : Colors.red,
+        ),
+      );
+    } catch (e) {
+      print('🧪 [TEST] 검증 테스트 오류: $e');
+      _showErrorMessage('검증 테스트 실패: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -314,6 +393,18 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                   label: const Text(
                     '인증 설정 초기화',
                     style: TextStyle(color: Colors.red),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 디버그 정보 버튼 (임시)
+                TextButton.icon(
+                  onPressed: _showDebugInfo,
+                  icon: const Icon(Icons.bug_report, color: Colors.orange),
+                  label: const Text(
+                    '디버그 정보 보기',
+                    style: TextStyle(color: Colors.orange),
                   ),
                 ),
               ],

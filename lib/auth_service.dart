@@ -43,74 +43,84 @@ class AuthService {
     }
   }
 
-  /// PIN 저장 (이중 저장으로 안전성 확보)
+  /// PIN 저장 (단순화된 평문 저장 - 디버깅용)
   static Future<void> savePin(String pin) async {
     try {
-      print('🔐 PIN 저장 시작: $pin');
+      print('🔐 [DEBUG] PIN 저장 시작');
+      print('📝 [DEBUG] 입력된 PIN: "$pin"');
+      print('📏 [DEBUG] PIN 길이: ${pin.length}');
       
-      // 1. SharedPreferences에 해시된 PIN 저장
+      // 단순하게 평문으로 저장 (임시)
       final prefs = await SharedPreferences.getInstance();
-      final hashedPin = sha256.convert(utf8.encode(pin)).toString();
-      await prefs.setString(_pinKey, hashedPin);
+      final success = await prefs.setString(_pinKey, pin);
       
-      // 2. FlutterSecureStorage에 원본 PIN 저장 (추가 보안)
-      await _secureStorage.write(key: '${_pinKey}_secure', value: pin);
+      print('💾 [DEBUG] SharedPreferences 저장 시도: $success');
       
-      print('💾 SharedPreferences 저장: $hashedPin');
-      print('🔒 SecureStorage 저장 완료');
+      // 저장 확인
+      final stored = prefs.getString(_pinKey);
+      print('🔍 [DEBUG] 저장된 값 확인: "$stored"');
+      print('✅ [DEBUG] 저장 성공 여부: ${stored == pin}');
       
-      // 3. 저장 즉시 검증
+      // SecureStorage에도 백업 저장
+      await _secureStorage.write(key: '${_pinKey}_backup', value: pin);
+      print('🔒 [DEBUG] SecureStorage 백업 완료');
+      
+      // 즉시 검증 테스트
       final verification = await verifyPin(pin);
-      print('✅ 저장 후 즉시 검증: ${verification ? '성공' : '실패'}');
+      print('🧪 [DEBUG] 즉시 검증 결과: $verification');
       
       if (!verification) {
-        throw Exception('PIN 저장 후 검증에 실패했습니다');
+        throw Exception('PIN 저장 후 검증 실패!');
       }
       
-      print('🎉 PIN 저장 및 검증 완료');
+      print('🎉 [DEBUG] PIN 저장 완료!');
     } catch (e) {
-      print('❌ PIN 저장 중 오류: $e');
+      print('❌ [DEBUG] PIN 저장 오류: $e');
       rethrow;
     }
   }
 
-  /// PIN 검증 (이중 검증으로 안전성 확보)
+  /// PIN 검증 (단순화된 평문 비교 - 디버깅용)
   static Future<bool> verifyPin(String pin) async {
     try {
-      print('🔍 PIN 검증 시작: $pin');
+      print('🔍 [DEBUG] PIN 검증 시작');
+      print('📝 [DEBUG] 입력된 PIN: "$pin"');
+      print('📏 [DEBUG] 입력 PIN 길이: ${pin.length}');
       
       final prefs = await SharedPreferences.getInstance();
       
-      // 1차 검증: SharedPreferences의 해시 비교
-      final storedHashedPin = prefs.getString(_pinKey);
-      print('🔒 저장된 해시: ${storedHashedPin ?? 'null'}');
+      // SharedPreferences에서 저장된 PIN 가져오기
+      final storedPin = prefs.getString(_pinKey);
+      print('💾 [DEBUG] 저장된 PIN: "${storedPin ?? 'null'}"');
       
-      if (storedHashedPin != null) {
-        final hashedPin = sha256.convert(utf8.encode(pin)).toString();
-        print('🔒 입력 PIN 해시: $hashedPin');
+      if (storedPin != null) {
+        print('📏 [DEBUG] 저장된 PIN 길이: ${storedPin.length}');
+        print('🔍 [DEBUG] PIN 비교: "$pin" == "$storedPin"');
         
-        if (storedHashedPin == hashedPin) {
-          print('✅ 1차 검증 성공 (해시 일치)');
+        final isMatch = pin == storedPin;
+        print('✅ [DEBUG] 비교 결과: $isMatch');
+        
+        if (isMatch) {
+          print('🎉 [DEBUG] PIN 검증 성공!');
           return true;
         }
       }
       
-      // 2차 검증: SecureStorage의 원본 비교 (fallback)
-      final securePin = await _secureStorage.read(key: '${_pinKey}_secure');
-      print('🔐 SecureStorage PIN: ${securePin ?? 'null'}');
+      // 백업에서도 확인
+      final backupPin = await _secureStorage.read(key: '${_pinKey}_backup');
+      print('🔒 [DEBUG] 백업 PIN: "${backupPin ?? 'null'}"');
       
-      if (securePin != null && securePin == pin) {
-        print('✅ 2차 검증 성공 (원본 일치)');
-        // 해시 저장이 깨진 경우 복구
-        await prefs.setString(_pinKey, sha256.convert(utf8.encode(pin)).toString());
-        print('🔧 해시 복구 완료');
+      if (backupPin != null && pin == backupPin) {
+        print('🔧 [DEBUG] 백업에서 복구 성공');
+        // 메인 저장소 복구
+        await prefs.setString(_pinKey, pin);
         return true;
       }
       
-      print('❌ 모든 검증 실패');
+      print('❌ [DEBUG] PIN 검증 실패');
       return false;
     } catch (e) {
-      print('❌ PIN 검증 중 오류: $e');
+      print('❌ [DEBUG] PIN 검증 오류: $e');
       return false;
     }
   }
