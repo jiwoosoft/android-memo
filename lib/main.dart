@@ -2510,7 +2510,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => _checkForUpdates(context),
+            onPressed: () => _checkForUpdate(context),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -2529,97 +2529,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// 업데이트 확인 메서드
-  void _checkForUpdates(BuildContext context) async {
-    // 로딩 다이얼로그 표시
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[850],
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(color: Colors.teal),
-            SizedBox(height: 16),
-            Text(
-              '업데이트 확인 중...',
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-      ),
-    );
-
+  Future<void> _checkForUpdate(BuildContext context) async {
     try {
-      // 업데이트 확인 실행
       final result = await UpdateService.checkForUpdate();
       
-      // 로딩 다이얼로그 닫기
-      Navigator.pop(context);
+      if (!mounted) return;
 
-      if (result.errorMessage != null) {
-        // 에러 발생 시
-        _showUpdateErrorDialog(context, result.errorMessage!);
-      } else if (result.hasUpdate) {
-        // 업데이트가 있는 경우
-        _showUpdateAvailableDialog(context, result);
+      if (result.hasUpdate && result.releaseInfo != null) {
+        _showUpdateDialog(context, result);
       } else {
-        // 최신 버전인 경우
-        _showNoUpdateDialog(context, result);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('현재 최신 버전입니다.'),
+            backgroundColor: Colors.teal,
+          ),
+        );
       }
     } catch (e) {
-      // 로딩 다이얼로그 닫기
-      Navigator.pop(context);
-      _showUpdateErrorDialog(context, '업데이트 확인 중 오류가 발생했습니다.');
+      print('업데이트 확인 오류: $e');
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('업데이트 확인 중 오류가 발생했습니다.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  /// 업데이트 사용 가능 다이얼로그
-  void _showUpdateAvailableDialog(BuildContext context, UpdateCheckResult result) {
+  void _showUpdateDialog(BuildContext context, UpdateCheckResult result) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[850],
-        title: Row(
-          children: [
-            Icon(Icons.system_update, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('업데이트 사용 가능', style: TextStyle(color: Colors.white)),
-          ],
-        ),
+        title: Text('업데이트 가능', style: TextStyle(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '새로운 버전이 출시되었습니다!',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              '새로운 버전이 있습니다:',
+              style: TextStyle(color: Colors.white70),
             ),
-            SizedBox(height: 12),
-            Text('현재 버전: v${result.currentVersion} (${result.currentBuildNumber})', 
-                 style: TextStyle(color: Colors.white70)),
-            Text('최신 버전: ${result.latestVersion} (${result.latestBuildNumber})', 
-                 style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
-            SizedBox(height: 12),
-            if (result.releaseInfo != null) ...[
-              Text('📋 릴리즈 노트:', style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
-              SizedBox(height: 4),
-              Container(
-                height: 100,
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: SingleChildScrollView(
-                  child: Text(
-                    result.releaseInfo!.body.isNotEmpty 
-                      ? result.releaseInfo!.body 
-                      : '릴리즈 노트가 없습니다.',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ),
+            SizedBox(height: 8),
+            Text(
+              '현재 버전: ${result.currentVersion}',
+              style: TextStyle(color: Colors.white70),
+            ),
+            Text(
+              '최신 버전: ${result.latestVersion}',
+              style: TextStyle(color: Colors.white70),
+            ),
+            if (result.releaseInfo?.body != null) ...[
+              SizedBox(height: 16),
+              Text(
+                '업데이트 내용:',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text(
+                result.releaseInfo!.body,
+                style: TextStyle(color: Colors.white70),
               ),
             ],
           ],
@@ -2630,158 +2601,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text('나중에', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
-              onPressed: () {
+            onPressed: () async {
+              if (result.releaseInfo?.downloadUrl != null) {
+                final url = Uri.parse(result.releaseInfo!.downloadUrl!);
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(
+                    url,
+                    mode: LaunchMode.externalApplication,
+                  );
+                }
+              }
               Navigator.pop(context);
-              _openUpdateLink(result.releaseInfo);
             },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.download, color: Colors.teal, size: 18),
-                SizedBox(width: 4),
-                Text('다운로드', style: TextStyle(color: Colors.teal)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 최신 버전 다이얼로그
-  void _showNoUpdateDialog(BuildContext context, UpdateCheckResult result) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[850],
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green),
-            SizedBox(width: 8),
-            Text('최신 버전', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '현재 최신 버전을 사용하고 있습니다.',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 12),
-            Text('현재 버전: v${result.currentVersion} (${result.currentBuildNumber})', 
-                 style: TextStyle(color: Colors.teal)),
-            if (result.latestVersion != null)
-              Text('최신 버전: ${result.latestVersion} (${result.latestBuildNumber})', 
-                   style: TextStyle(color: Colors.white70)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('확인', style: TextStyle(color: Colors.teal)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 업데이트 확인 오류 다이얼로그
-  void _showUpdateErrorDialog(BuildContext context, String errorMessage) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[850],
-        title: Row(
-          children: [
-            Icon(Icons.error, color: Colors.red),
-            SizedBox(width: 8),
-            Text('업데이트 확인 실패', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              errorMessage,
-              style: TextStyle(color: Colors.white70),
-            ),
-            SizedBox(height: 12),
-            Text(
-              '인터넷 연결을 확인하고 다시 시도해주세요.',
-              style: TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('확인', style: TextStyle(color: Colors.teal)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 업데이트 링크 열기
-  void _openUpdateLink(ReleaseInfo? releaseInfo) async {
-    if (releaseInfo == null) {
-      _showErrorDialog('릴리즈 정보를 찾을 수 없습니다.');
-      return;
-    }
-    
-    // 릴리즈 정보에서 다운로드 링크 가져오기
-    String? downloadUrl = releaseInfo.downloadUrl;
-    
-    // 다운로드 링크가 없으면 최신 Google Drive 링크 사용
-    if (downloadUrl == null || downloadUrl.isEmpty) {
-      downloadUrl = 'https://drive.google.com/file/d/19Rm9Klj0L3Fy_SkEYwqL1vNAm46P0gWi/view?usp=drivesdk';
-      print('⚠️ 릴리즈 노트에서 다운로드 링크를 찾지 못했습니다. 최신 링크를 사용합니다.');
-    }
-    
-    try {
-      final Uri url = Uri.parse(downloadUrl);
-      print('🔗 다운로드 링크 열기: $downloadUrl');
-      
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-        print('✅ 외부 앱으로 링크 열기 성공');
-      } else {
-        print('⚠️ 외부 앱으로 열기 실패, 기본 브라우저로 시도');
-        try {
-          await launchUrl(url, mode: LaunchMode.platformDefault);
-          print('✅ 기본 브라우저로 링크 열기 성공');
-        } catch (e2) {
-          print('❌ 기본 브라우저로도 열기 실패: $e2');
-          _showErrorDialog('브라우저를 열 수 없습니다.\n\n수동으로 다운로드하세요:\n$downloadUrl');
-        }
-      }
-    } catch (e) {
-      print('❌ URL 열기 오류: $e');
-      _showErrorDialog('다운로드 링크를 열 수 없습니다.\n\n수동으로 다운로드하세요:\n$downloadUrl');
-    }
-  }
-  
-  /// 에러 다이얼로그 표시
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[850],
-        title: Row(
-          children: [
-            Icon(Icons.error, color: Colors.red),
-            SizedBox(width: 8),
-            Text('오류', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: Text(message, style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('확인', style: TextStyle(color: Colors.teal)),
+            child: Text('업데이트', style: TextStyle(color: Colors.teal)),
           ),
         ],
       ),
