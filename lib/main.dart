@@ -8,19 +8,31 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'security_service.dart';
 import 'update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 
-void main() {
-  runApp(MyApp());
-}
-
-// 글로벌 테마 상태 관리
-class ThemeNotifier extends ChangeNotifier {
+// 글로벌 설정 상태 관리
+class AppSettings extends ChangeNotifier {
   AppTheme _currentTheme = AppTheme.dark;
+  FontSize _currentFontSize = FontSize.medium;
   
   AppTheme get currentTheme => _currentTheme;
+  FontSize get currentFontSize => _currentFontSize;
   
-  void setTheme(AppTheme theme) {
-    _currentTheme = theme;
+  void updateTheme(AppTheme newTheme) {
+    _currentTheme = newTheme;
+    DataService.saveThemeSettings(newTheme);
+    notifyListeners();
+  }
+  
+  void updateFontSize(FontSize newFontSize) {
+    _currentFontSize = newFontSize;
+    DataService.saveFontSizeSettings(newFontSize);
+    notifyListeners();
+  }
+  
+  Future<void> loadSettings() async {
+    _currentTheme = await DataService.loadThemeSettings();
+    _currentFontSize = await DataService.loadFontSizeSettings();
     notifyListeners();
   }
   
@@ -34,6 +46,28 @@ class ThemeNotifier extends ChangeNotifier {
         return ThemeMode.dark;
     }
   }
+  
+  double get fontSizeMultiplier {
+    switch (_currentFontSize) {
+      case FontSize.small:
+        return 0.8;
+      case FontSize.medium:
+        return 1.0;
+      case FontSize.large:
+        return 1.2;
+      case FontSize.extraLarge:
+        return 1.4;
+    }
+  }
+}
+
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => AppSettings()..loadSettings(),
+      child: MyApp(),
+    ),
+  );
 }
 
 // 정렬 옵션 enum
@@ -333,156 +367,72 @@ class DataService {
 }
 
 // 메인 앱 클래스
-class MyApp extends StatefulWidget {
-  @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  AppTheme _currentTheme = AppTheme.dark;
-  FontSize _currentFontSize = FontSize.medium;
-  
-  @override
-  void initState() {
-    super.initState();
-    // 앱 생명주기 관찰자 등록
-    WidgetsBinding.instance.addObserver(this);
-    _loadThemeSettings();
-    _loadFontSizeSettings();
-  }
-  
-  void _loadThemeSettings() async {
-    final themeSettings = await DataService.loadThemeSettings();
-    setState(() {
-      _currentTheme = themeSettings;
-    });
-  }
-  
-  void _loadFontSizeSettings() async {
-    final fontSizeSettings = await DataService.loadFontSizeSettings();
-    setState(() {
-      _currentFontSize = fontSizeSettings;
-    });
-  }
-  
-  void updateTheme(AppTheme newTheme) {
-    setState(() {
-      _currentTheme = newTheme;
-    });
-    DataService.saveThemeSettings(newTheme);
-  }
-  
-  void updateFontSize(FontSize newFontSize) {
-    setState(() {
-      _currentFontSize = newFontSize;
-    });
-    DataService.saveFontSizeSettings(newFontSize);
-  }
-  
-  ThemeMode get _themeMode {
-    switch (_currentTheme) {
-      case AppTheme.system:
-        return ThemeMode.system;
-      case AppTheme.light:
-        return ThemeMode.light;
-      case AppTheme.dark:
-        return ThemeMode.dark;
-    }
-  }
-  
-  double get _fontSizeMultiplier {
-    switch (_currentFontSize) {
-      case FontSize.small:
-        return 0.8;
-      case FontSize.medium:
-        return 1.0;
-      case FontSize.large:
-        return 1.2;
-      case FontSize.extraLarge:
-        return 1.4;
-    }
-  }
-  
-  TextTheme _buildTextTheme(TextTheme baseTheme) {
-    return TextTheme(
-      displayLarge: baseTheme.displayLarge?.copyWith(fontSize: (baseTheme.displayLarge?.fontSize ?? 57) * _fontSizeMultiplier),
-      displayMedium: baseTheme.displayMedium?.copyWith(fontSize: (baseTheme.displayMedium?.fontSize ?? 45) * _fontSizeMultiplier),
-      displaySmall: baseTheme.displaySmall?.copyWith(fontSize: (baseTheme.displaySmall?.fontSize ?? 36) * _fontSizeMultiplier),
-      headlineLarge: baseTheme.headlineLarge?.copyWith(fontSize: (baseTheme.headlineLarge?.fontSize ?? 32) * _fontSizeMultiplier),
-      headlineMedium: baseTheme.headlineMedium?.copyWith(fontSize: (baseTheme.headlineMedium?.fontSize ?? 28) * _fontSizeMultiplier),
-      headlineSmall: baseTheme.headlineSmall?.copyWith(fontSize: (baseTheme.headlineSmall?.fontSize ?? 24) * _fontSizeMultiplier),
-      titleLarge: baseTheme.titleLarge?.copyWith(fontSize: (baseTheme.titleLarge?.fontSize ?? 22) * _fontSizeMultiplier),
-      titleMedium: baseTheme.titleMedium?.copyWith(fontSize: (baseTheme.titleMedium?.fontSize ?? 16) * _fontSizeMultiplier),
-      titleSmall: baseTheme.titleSmall?.copyWith(fontSize: (baseTheme.titleSmall?.fontSize ?? 14) * _fontSizeMultiplier),
-      bodyLarge: baseTheme.bodyLarge?.copyWith(fontSize: (baseTheme.bodyLarge?.fontSize ?? 16) * _fontSizeMultiplier),
-      bodyMedium: baseTheme.bodyMedium?.copyWith(fontSize: (baseTheme.bodyMedium?.fontSize ?? 14) * _fontSizeMultiplier),
-      bodySmall: baseTheme.bodySmall?.copyWith(fontSize: (baseTheme.bodySmall?.fontSize ?? 12) * _fontSizeMultiplier),
-      labelLarge: baseTheme.labelLarge?.copyWith(fontSize: (baseTheme.labelLarge?.fontSize ?? 14) * _fontSizeMultiplier),
-      labelMedium: baseTheme.labelMedium?.copyWith(fontSize: (baseTheme.labelMedium?.fontSize ?? 12) * _fontSizeMultiplier),
-      labelSmall: baseTheme.labelSmall?.copyWith(fontSize: (baseTheme.labelSmall?.fontSize ?? 11) * _fontSizeMultiplier),
-    );
-  }
-
-  @override
-  void dispose() {
-    // 앱 생명주기 관찰자 제거
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    
-    // 🔧 보안 강화: 앱이 완전히 종료될 때만 세션 PIN 클리어
-    // (paused 상태에서는 클리어하지 않음 - 잠깐 나갔다가 돌아오는 경우를 고려)
-    if (state == AppLifecycleState.detached) {
-      print('앱이 완전 종료됨 - 세션 PIN 클리어');
-      DataService.clearSessionPin();
-    }
-  }
-
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '안전한 메모장',
-      debugShowCheckedModeBanner: false,
-      themeMode: _themeMode,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        primarySwatch: Colors.teal,
-        scaffoldBackgroundColor: Colors.white,
-        cardColor: Colors.grey[100],
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.teal,
-          foregroundColor: Colors.white,
-        ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: Colors.teal,
-        ),
-        textTheme: _buildTextTheme(TextTheme(
-          bodyLarge: TextStyle(color: Colors.black87),
-          bodyMedium: TextStyle(color: Colors.black54),
-        )),
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.teal,
-        scaffoldBackgroundColor: Colors.black,
-        cardColor: Colors.grey[900],
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.grey[950],
-          foregroundColor: Colors.white,
-        ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: Colors.teal,
-        ),
-        textTheme: _buildTextTheme(TextTheme(
-          bodyLarge: TextStyle(color: Colors.white),
-          bodyMedium: TextStyle(color: Colors.white70),
-        )),
-      ),
-      home: SplashScreen(),
+    return Consumer<AppSettings>(
+      builder: (context, settings, _) {
+        return MaterialApp(
+          title: '안전한 메모장',
+          debugShowCheckedModeBanner: false,
+          themeMode: settings.themeMode,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            primarySwatch: Colors.teal,
+            scaffoldBackgroundColor: Colors.white,
+            cardColor: Colors.grey[100],
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.teal,
+              foregroundColor: Colors.white,
+            ),
+            floatingActionButtonTheme: FloatingActionButtonThemeData(
+              backgroundColor: Colors.teal,
+            ),
+            textTheme: _buildTextTheme(TextTheme(
+              bodyLarge: TextStyle(color: Colors.black87),
+              bodyMedium: TextStyle(color: Colors.black54),
+            ), settings.fontSizeMultiplier),
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            primarySwatch: Colors.teal,
+            scaffoldBackgroundColor: Colors.black,
+            cardColor: Colors.grey[900],
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.grey[950],
+              foregroundColor: Colors.white,
+            ),
+            floatingActionButtonTheme: FloatingActionButtonThemeData(
+              backgroundColor: Colors.teal,
+            ),
+            textTheme: _buildTextTheme(TextTheme(
+              bodyLarge: TextStyle(color: Colors.white),
+              bodyMedium: TextStyle(color: Colors.white70),
+            ), settings.fontSizeMultiplier),
+          ),
+          home: SplashScreen(),
+        );
+      },
+    );
+  }
+  
+  TextTheme _buildTextTheme(TextTheme baseTheme, double multiplier) {
+    return TextTheme(
+      displayLarge: baseTheme.displayLarge?.copyWith(fontSize: (baseTheme.displayLarge?.fontSize ?? 57) * multiplier),
+      displayMedium: baseTheme.displayMedium?.copyWith(fontSize: (baseTheme.displayMedium?.fontSize ?? 45) * multiplier),
+      displaySmall: baseTheme.displaySmall?.copyWith(fontSize: (baseTheme.displaySmall?.fontSize ?? 36) * multiplier),
+      headlineLarge: baseTheme.headlineLarge?.copyWith(fontSize: (baseTheme.headlineLarge?.fontSize ?? 32) * multiplier),
+      headlineMedium: baseTheme.headlineMedium?.copyWith(fontSize: (baseTheme.headlineMedium?.fontSize ?? 28) * multiplier),
+      headlineSmall: baseTheme.headlineSmall?.copyWith(fontSize: (baseTheme.headlineSmall?.fontSize ?? 24) * multiplier),
+      titleLarge: baseTheme.titleLarge?.copyWith(fontSize: (baseTheme.titleLarge?.fontSize ?? 22) * multiplier),
+      titleMedium: baseTheme.titleMedium?.copyWith(fontSize: (baseTheme.titleMedium?.fontSize ?? 16) * multiplier),
+      titleSmall: baseTheme.titleSmall?.copyWith(fontSize: (baseTheme.titleSmall?.fontSize ?? 14) * multiplier),
+      bodyLarge: baseTheme.bodyLarge?.copyWith(fontSize: (baseTheme.bodyLarge?.fontSize ?? 16) * multiplier),
+      bodyMedium: baseTheme.bodyMedium?.copyWith(fontSize: (baseTheme.bodyMedium?.fontSize ?? 14) * multiplier),
+      bodySmall: baseTheme.bodySmall?.copyWith(fontSize: (baseTheme.bodySmall?.fontSize ?? 12) * multiplier),
+      labelLarge: baseTheme.labelLarge?.copyWith(fontSize: (baseTheme.labelLarge?.fontSize ?? 14) * multiplier),
+      labelMedium: baseTheme.labelMedium?.copyWith(fontSize: (baseTheme.labelMedium?.fontSize ?? 12) * multiplier),
+      labelSmall: baseTheme.labelSmall?.copyWith(fontSize: (baseTheme.labelSmall?.fontSize ?? 11) * multiplier),
     );
   }
 }
@@ -2174,37 +2124,26 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   PackageInfo? packageInfo;
-  AppTheme? _currentTheme;
-  FontSize? _currentFontSize;
   bool _isThemeDialogOpen = false;
   bool _isFontSizeDialogOpen = false;
+  AppTheme? _currentTheme;
+  FontSize? _currentFontSize;
 
   @override
   void initState() {
     super.initState();
     _loadPackageInfo();
-    _loadThemeSettings();
-    _loadFontSizeSettings();
-  }
-  
-  Future<void> _loadThemeSettings() async {
-    final theme = await DataService.loadThemeSettings();
-    if (mounted) {
-      setState(() {
-        _currentTheme = theme;
-      });
-    }
-  }
-  
-  Future<void> _loadFontSizeSettings() async {
-    final fontSize = await DataService.loadFontSizeSettings();
-    if (mounted) {
-      setState(() {
-        _currentFontSize = fontSize;
-      });
-    }
+    _initializeSettings();
   }
 
+  void _initializeSettings() {
+    final settings = Provider.of<AppSettings>(context, listen: false);
+    setState(() {
+      _currentTheme = settings.currentTheme;
+      _currentFontSize = settings.currentFontSize;
+    });
+  }
+  
   Future<void> _loadPackageInfo() async {
     final info = await PackageInfo.fromPlatform();
     if (mounted) {
@@ -2284,10 +2223,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               TextButton(
                 onPressed: () async {
+                  final settings = Provider.of<AppSettings>(context, listen: false);
+                  settings.updateTheme(tempTheme);
                   setState(() {
                     _currentTheme = tempTheme;
                   });
-                  await DataService.saveThemeSettings(tempTheme);
                   _isThemeDialogOpen = false;
                   Navigator.pop(context);
                 },
@@ -2344,10 +2284,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               TextButton(
                 onPressed: () async {
+                  final settings = Provider.of<AppSettings>(context, listen: false);
+                  settings.updateFontSize(tempFontSize);
                   setState(() {
                     _currentFontSize = tempFontSize;
                   });
-                  await DataService.saveFontSizeSettings(tempFontSize);
                   _isFontSizeDialogOpen = false;
                   Navigator.pop(context);
                 },

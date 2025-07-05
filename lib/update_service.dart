@@ -6,7 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 class UpdateService {
   // GitHub 저장소 정보
   static const String _owner = 'jiwoosoft';
-  static const String _repo = 'android-memo';
+  static const String _repo = 'secure-memo';
   static const String _apiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases/latest';
 
   /// 최신 릴리즈 정보를 가져오는 메서드

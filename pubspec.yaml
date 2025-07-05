@@ -3,7 +3,7 @@ description: "간단한 메모장"
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.11+12
+version: 1.0.12+13
 
 environment:
   sdk: ^3.8.1
@@ -11,6 +11,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  provider: ^6.1.1  # 상태 관리를 위한 provider 패키지 추가
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.2.2
   crypto: ^3.0.3
