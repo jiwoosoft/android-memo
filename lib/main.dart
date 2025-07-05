@@ -2348,7 +2348,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(color: Colors.white70)
             ),
             trailing: Icon(Icons.arrow_forward_ios, color: Colors.white70),
-            onTap: () => _showAboutDialog(context),
+            onTap: () async {
+              try {
+                final result = await UpdateService.checkForUpdate();
+                if (result.hasUpdate && result.releaseInfo != null) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: Colors.grey[850],
+                      title: Text('업데이트 가능', style: TextStyle(color: Colors.white)),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '새로운 버전이 있습니다:',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            '현재 버전: ${result.currentVersion}',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                          Text(
+                            '최신 버전: ${result.latestVersion}',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                          if (result.releaseInfo?.downloadUrl != null) ...[
+                            SizedBox(height: 16),
+                            Text(
+                              '업데이트 내용:',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              result.releaseInfo!.body,
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                          ],
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('나중에', style: TextStyle(color: Colors.grey)),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            if (result.releaseInfo?.downloadUrl != null) {
+                              final url = Uri.parse(result.releaseInfo!.downloadUrl!);
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(
+                                  url,
+                                  mode: LaunchMode.externalApplication,
+                                );
+                              }
+                            }
+                            Navigator.pop(context);
+                          },
+                          child: Text('업데이트', style: TextStyle(color: Colors.teal)),
+                        ),
+                      ],
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('현재 최신 버전입니다.'),
+                      backgroundColor: Colors.teal,
+                    ),
+                  );
+                }
+              } catch (e) {
+                print('업데이트 확인 오류: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('업데이트 확인 중 오류가 발생했습니다.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
           ),
           Divider(color: Colors.grey[700]),
           ListTile(
