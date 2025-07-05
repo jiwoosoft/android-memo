@@ -2176,6 +2176,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   PackageInfo? packageInfo;
   AppTheme? _currentTheme;
   FontSize? _currentFontSize;
+  bool _isThemeDialogOpen = false;
+  bool _isFontSizeDialogOpen = false;
 
   @override
   void initState() {
@@ -2187,23 +2189,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   
   Future<void> _loadThemeSettings() async {
     final theme = await DataService.loadThemeSettings();
-    setState(() {
-      _currentTheme = theme;
-    });
+    if (mounted) {
+      setState(() {
+        _currentTheme = theme;
+      });
+    }
   }
   
   Future<void> _loadFontSizeSettings() async {
     final fontSize = await DataService.loadFontSizeSettings();
-    setState(() {
-      _currentFontSize = fontSize;
-    });
+    if (mounted) {
+      setState(() {
+        _currentFontSize = fontSize;
+      });
+    }
   }
 
   Future<void> _loadPackageInfo() async {
     final info = await PackageInfo.fromPlatform();
-    setState(() {
-      packageInfo = info;
-    });
+    if (mounted) {
+      setState(() {
+        packageInfo = info;
+      });
+    }
   }
   
   String _getThemeDisplayName(AppTheme? theme) {
@@ -2235,150 +2243,169 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
   
   void _showThemeDialog(BuildContext context) {
+    if (_isThemeDialogOpen) return;
+    _isThemeDialogOpen = true;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('테마 선택'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<AppTheme>(
-              title: Text('시스템 설정 따름'),
-              subtitle: Text('디바이스 설정에 따라 자동 변경'),
-              value: AppTheme.system,
-              groupValue: _currentTheme,
-              onChanged: (value) {
-                setState(() {
-                  _currentTheme = value;
-                });
-              },
-            ),
-            RadioListTile<AppTheme>(
-              title: Text('라이트 테마'),
-              subtitle: Text('밝은 배경의 테마'),
-              value: AppTheme.light,
-              groupValue: _currentTheme,
-              onChanged: (value) {
-                setState(() {
-                  _currentTheme = value;
-                });
-              },
-            ),
-            RadioListTile<AppTheme>(
-              title: Text('다크 테마'),
-              subtitle: Text('어두운 배경의 테마'),
-              value: AppTheme.dark,
-              groupValue: _currentTheme,
-              onChanged: (value) {
-                setState(() {
-                  _currentTheme = value;
-                });
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('취소'),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('테마 선택'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<AppTheme>(
+                title: Text('시스템 설정 따름'),
+                subtitle: Text('디바이스 설정에 따라 자동 변경'),
+                value: AppTheme.system,
+                groupValue: _currentTheme,
+                onChanged: (value) {
+                  setDialogState(() {
+                    _currentTheme = value;
+                  });
+                  setState(() {
+                    _currentTheme = value;
+                  });
+                },
+              ),
+              RadioListTile<AppTheme>(
+                title: Text('라이트 테마'),
+                subtitle: Text('밝은 화면 모드'),
+                value: AppTheme.light,
+                groupValue: _currentTheme,
+                onChanged: (value) {
+                  setDialogState(() {
+                    _currentTheme = value;
+                  });
+                  setState(() {
+                    _currentTheme = value;
+                  });
+                },
+              ),
+              RadioListTile<AppTheme>(
+                title: Text('다크 테마'),
+                subtitle: Text('어두운 화면 모드'),
+                value: AppTheme.dark,
+                groupValue: _currentTheme,
+                onChanged: (value) {
+                  setDialogState(() {
+                    _currentTheme = value;
+                  });
+                  setState(() {
+                    _currentTheme = value;
+                  });
+                },
+              ),
+            ],
           ),
-          TextButton(
+          actions: [
+            TextButton(
               onPressed: () {
-              if (_currentTheme != null) {
-                _applyTheme(_currentTheme!);
-              }
-              Navigator.pop(context);
-            },
-            child: Text('적용'),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  void _applyTheme(AppTheme theme) {
-    // MyApp의 updateTheme 메서드를 호출하기 위해 context를 통해 접근
-    final myAppState = context.findAncestorStateOfType<_MyAppState>();
-    myAppState?.updateTheme(theme);
-  }
-  
-  void _showFontSizeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('폰트 크기 선택'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<FontSize>(
-              title: Text('작게', style: TextStyle(fontSize: 12)),
-              subtitle: Text('화면에 더 많은 내용을 표시합니다', style: TextStyle(fontSize: 10)),
-              value: FontSize.small,
-              groupValue: _currentFontSize,
-              onChanged: (value) {
-                setState(() {
-                  _currentFontSize = value;
-                });
+                Navigator.pop(context);
+                _isThemeDialogOpen = false;
               },
+              child: Text('취소'),
             ),
-            RadioListTile<FontSize>(
-              title: Text('보통', style: TextStyle(fontSize: 14)),
-              subtitle: Text('기본 폰트 크기입니다', style: TextStyle(fontSize: 12)),
-              value: FontSize.medium,
-              groupValue: _currentFontSize,
-              onChanged: (value) {
-                setState(() {
-                  _currentFontSize = value;
-                });
+            TextButton(
+              onPressed: () async {
+                await DataService.saveThemeSettings(_currentTheme!);
+                Navigator.pop(context);
+                _isThemeDialogOpen = false;
               },
-            ),
-            RadioListTile<FontSize>(
-              title: Text('크게', style: TextStyle(fontSize: 16)),
-              subtitle: Text('더 큰 폰트로 읽기 쉽게 합니다', style: TextStyle(fontSize: 14)),
-              value: FontSize.large,
-              groupValue: _currentFontSize,
-              onChanged: (value) {
-                setState(() {
-                  _currentFontSize = value;
-                });
-              },
-            ),
-            RadioListTile<FontSize>(
-              title: Text('매우 크게', style: TextStyle(fontSize: 18)),
-              subtitle: Text('가장 큰 폰트로 가독성을 높입니다', style: TextStyle(fontSize: 16)),
-              value: FontSize.extraLarge,
-              groupValue: _currentFontSize,
-              onChanged: (value) {
-                setState(() {
-                  _currentFontSize = value;
-                });
-              },
+              child: Text('적용'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('취소'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (_currentFontSize != null) {
-                _applyFontSize(_currentFontSize!);
-              }
-              Navigator.pop(context);
-            },
-            child: Text('적용'),
-          ),
-        ],
       ),
-    );
+    ).then((_) => _isThemeDialogOpen = false);
   }
-  
-  void _applyFontSize(FontSize fontSize) {
-    // MyApp의 updateFontSize 메서드를 호출하기 위해 context를 통해 접근
-    final myAppState = context.findAncestorStateOfType<_MyAppState>();
-    myAppState?.updateFontSize(fontSize);
+
+  void _showFontSizeDialog(BuildContext context) {
+    if (_isFontSizeDialogOpen) return;
+    _isFontSizeDialogOpen = true;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('폰트 크기'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<FontSize>(
+                title: Text('작게'),
+                value: FontSize.small,
+                groupValue: _currentFontSize,
+                onChanged: (value) {
+                  setDialogState(() {
+                    _currentFontSize = value;
+                  });
+                  setState(() {
+                    _currentFontSize = value;
+                  });
+                },
+              ),
+              RadioListTile<FontSize>(
+                title: Text('보통'),
+                value: FontSize.medium,
+                groupValue: _currentFontSize,
+                onChanged: (value) {
+                  setDialogState(() {
+                    _currentFontSize = value;
+                  });
+                  setState(() {
+                    _currentFontSize = value;
+                  });
+                },
+              ),
+              RadioListTile<FontSize>(
+                title: Text('크게'),
+                value: FontSize.large,
+                groupValue: _currentFontSize,
+                onChanged: (value) {
+                  setDialogState(() {
+                    _currentFontSize = value;
+                  });
+                  setState(() {
+                    _currentFontSize = value;
+                  });
+                },
+              ),
+              RadioListTile<FontSize>(
+                title: Text('매우 크게'),
+                value: FontSize.extraLarge,
+                groupValue: _currentFontSize,
+                onChanged: (value) {
+                  setDialogState(() {
+                    _currentFontSize = value;
+                  });
+                  setState(() {
+                    _currentFontSize = value;
+                  });
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _isFontSizeDialogOpen = false;
+              },
+              child: Text('취소'),
+            ),
+            TextButton(
+              onPressed: () async {
+                await DataService.saveFontSizeSettings(_currentFontSize!);
+                Navigator.pop(context);
+                _isFontSizeDialogOpen = false;
+              },
+              child: Text('적용'),
+            ),
+          ],
+        ),
+      ),
+    ).then((_) => _isFontSizeDialogOpen = false);
   }
 
   @override

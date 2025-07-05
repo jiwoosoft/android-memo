@@ -2,10 +2,10 @@
 
 ## 📲 APK 다운로드
 
-### 🚀 최신 버전 (v1.0.5)
-**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/19Rm9Klj0L3Fy_SkEYwqL1vNAm46P0gWi/view?usp=drivesdk)** | **[📋 릴리즈 노트](https://github.com/jiwoosoft/android-memo/releases)**
+### 🚀 최신 버전 (v1.0.6)
+**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1BPtLwbeEWiPGvCRMpajAcj1hfofyPO1I/view?usp=drivesdk)** | **[📋 릴리즈 노트](https://github.com/jiwoosoft/android-memo/releases)**
 
-- **파일 크기**: 59.2MB
+- **파일 크기**: 62.9MB
 - **Android 요구사항**: 5.0+ (API 21+)
 - **패키지명**: `com.jiwoosoft.secure_memo`
 - **최종 업데이트**: 2025.07.04
@@ -262,17 +262,17 @@ cardColor: Colors.grey[900]     // 카드 배경
 
 ## 🚀 향후 계획
 
-### v1.0.5 (개발 중)
-- [ ] 메모 태그 기능
+### v1.0.7 (개발 중)
 - [ ] 백업/복원 기능 (파일 export/import)
 - [ ] 지문 인증 지원
 - [ ] 메모 내 이미지 첨부 기능
-
-### v1.0.5 (계획)
 - [ ] 메모 즐겨찾기 기능
+
+### v1.0.8 (계획)
 - [ ] 메모 자동 저장 기능
 - [ ] 메모 공유 기능
 - [ ] 위젯 지원
+- [ ] 클라우드 동기화 기능
 
 ## 📄 라이선스
 
@@ -328,6 +328,13 @@ MIT 라이선스
 ```
 
 ## 📋 변경 로그
+
+### v1.0.6 (2025-01-04)
+**🔧 중요 버그 수정**
+- ✅ 메모 저장 문제 해결 (세션 PIN 관리 개선)
+- ✅ 앱 종료 후 재시작 시 메모 유지 보장
+- ✅ 저장 실패 시 사용자 알림 기능 추가
+- ✅ Android 빌드 설정 최적화
 
 ### v1.0.5 (2025-01-XX)
 **🏷️ 메모 태그 기능 추가**

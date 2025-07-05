@@ -131,6 +131,21 @@ class GoogleDriveUploader:
             file_size = os.path.getsize(file_path)
             print(f"📤 업로드 시작: {file_name} ({file_size / 1024 / 1024:.1f}MB)")
             
+            # 기존 파일 검색
+            query = f"name='{file_name}'"
+            if folder_id:
+                query += f" and parents in '{folder_id}'"
+            
+            results = self.service.files().list(q=query, fields='files(id, name)').execute()
+            existing_files = results.get('files', [])
+            
+            if existing_files:
+                # 기존 파일이 있으면 삭제
+                existing_file = existing_files[0]
+                print(f"🔄 기존 파일 발견: {existing_file['name']} (ID: {existing_file['id']})")
+                self.service.files().delete(fileId=existing_file['id']).execute()
+                print(f"✅ 기존 파일 삭제 완료")
+            
             # 파일 메타데이터 설정
             file_metadata = {'name': file_name}
             if folder_id:
