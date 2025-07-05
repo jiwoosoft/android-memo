@@ -1,9 +1,9 @@
 # 안전한 메모장 앱 🔒
 
 ## 📱 다운로드
-**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1acuvBJCRUBWDJaxRA97aT8rx_AB_mKFY/view?usp=drivesdk)**
+**[📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1vMLyiy5Yl3gxPsqn3eGot-C_wgZu7136/view?usp=drivesdk)**
 
-**현재 버전**: v1.0.14+15
+**현재 버전**: v1.0.15+16
 
 - **파일 크기**: 62.9MB
 - **Android 요구사항**: 5.0+ (API 21+)
