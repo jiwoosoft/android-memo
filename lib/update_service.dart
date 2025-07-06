@@ -184,14 +184,18 @@ class UpdateService {
       final minor = int.tryParse(parts[1]) ?? 2;
       final patch = int.tryParse(parts[2]) ?? 0;
       
-      // v2.2.16에서는 더 이상 자동 업데이트 감지하지 않음 (무한 반복 방지)
+      // v2.2.16에서 v2.2.17 업데이트 감지
       if (currentVersion == '2.2.16') {
-        print('🛑 [DEBUG] v2.2.16에서는 자동 업데이트 감지 비활성화');
+        print('🔍 [DEBUG] v2.2.16에서 v2.2.17 업데이트 확인');
         return UpdateCheckResult(
           currentVersion: currentVersion,
-          latestVersion: currentVersion,
-          hasUpdate: false,
-          releaseInfo: null,
+          latestVersion: '2.2.17',
+          hasUpdate: true,
+          releaseInfo: ReleaseInfo(
+            version: '2.2.17',
+            downloadUrl: 'https://drive.google.com/file/d/1ysZEFtmd3DNJK_WpeNEvBh41sE6paGK1/view?usp=drivesdk',
+            body: '• 업데이트 시스템 테스트 버전\n• v2.2.16에서 v2.2.17로의 정상 업데이트 확인\n• 개발자 정보 추가',
+          ),
         );
       }
       
