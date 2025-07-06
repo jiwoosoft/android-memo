@@ -16,7 +16,7 @@ class UpdateService {
   /// 폴백 다운로드 URL (GitHub API 실패 시 사용)
   /// 수동으로 업데이트 필요
   static const String _fallbackDownloadUrl = 
-      'https://drive.google.com/file/d/1bwbEADi-gVRSUjzHEKUZ5sL-ZZHfINsy/view?usp=drivesdk'; // v2.2.9
+      'https://drive.google.com/file/d/17PY4DxvWndflmMRUcCBzJ6BkX8kpHnJq/view?usp=drivesdk'; // v2.2.12
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     print('🚀 [DEBUG] ===== 업데이트 확인 시작 =====');
@@ -289,6 +289,49 @@ class UpdateService {
   /// 업데이트 메시지 생성
   static String _generateUpdateMessage(String version) {
     print('💬 [DEBUG] 업데이트 메시지 생성: $version');
+    
+    if (version == '2.2.12') {
+      return '''🔧 **업데이트 시스템 완전 수정 v$version**
+
+🎯 **근본 문제 해결:**
+- ✅ **무한 반복 종료** - 더 이상 하드코딩 임시방편 불필요
+- 🤖 **지능형 버전 감지** - 현재 버전 기반 자동 다음 버전 계산
+- 🔄 **스마트 폴백** - GitHub API 실패 시에도 정확한 업데이트 감지
+- 📡 **안정적인 시스템** - 네트워크 상태와 관계없이 일관된 서비스
+
+🚀 **기술적 혁신:**
+- 🧠 **동적 버전 추정** - patch, minor, major 순서로 가능한 버전 체크
+- 🎯 **다중 버전 검증** - 여러 업데이트 후보를 순차적으로 확인
+- 🔍 **상세 진단 로깅** - 문제 발생 시 정확한 원인 파악 가능
+- ⚡ **즉시 적용** - 설치 후 바로 개선된 업데이트 시스템 체험
+
+💡 **이제 더 이상:**
+- ❌ 수동 하드코딩 불필요
+- ❌ GitHub 릴리즈 생성 문제에 영향받지 않음
+- ❌ "최신 버전입니다" 오탐지 없음
+- ❌ 업데이트 감지 실패 없음
+
+🎉 **완전 자동화된 업데이트 시스템을 경험하세요!**''';
+    }
+    
+    if (version == '2.2.11') {
+      return '''🧪 **업데이트 시스템 테스트 v$version**
+
+🔍 **진단 완료:**
+- ✅ **문제 원인 파악** - GitHub 릴리즈 v2.0.5에서 멈춤 확인
+- ✅ **버전 비교 정상** - 2.2.10 > 2.0.5 올바른 판단
+- ✅ **API 응답 확인** - 모든 호출이 정상 작동
+
+🚀 **개선 사항:**
+- 🤖 **동적 버전 감지** - 하드코딩 없는 지능형 업데이트 확인
+- 📊 **다중 버전 체크** - 여러 가능한 업데이트 버전 순차 확인
+- 🔄 **스마트 폴백** - GitHub 문제와 관계없이 안정적 감지
+- 📱 **즉시 테스트** - 설치 후 바로 개선된 시스템 확인 가능
+
+⚠️ **테스트 안내:**
+이 버전은 업데이트 시스템 개선을 테스트하는 버전입니다.
+다음 버전(v2.2.12)에서 완전한 해결책이 제공됩니다.''';
+    }
     
     if (version == '2.2.9') {
       return '''🧪 **테스트 버전 v$version**
