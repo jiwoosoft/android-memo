@@ -1,415 +1,428 @@
 import 'package:flutter/material.dart';
-import 'package:pinput/pinput.dart';
-import 'package:local_auth/local_auth.dart';
+import 'package:flutter/services.dart';
 import 'auth_service.dart';
-import 'main.dart';
 
-/// 최초 인증 설정 화면
-/// PIN 설정 및 인증 방법 선택을 진행합니다.
+/// PIN 전용 인증 설정 화면
+/// 지문인증 기능을 제거하고 PIN 설정만 지원합니다.
 class AuthSetupScreen extends StatefulWidget {
-  const AuthSetupScreen({Key? key}) : super(key: key);
-
   @override
-  State<AuthSetupScreen> createState() => _AuthSetupScreenState();
+  _AuthSetupScreenState createState() => _AuthSetupScreenState();
 }
 
 class _AuthSetupScreenState extends State<AuthSetupScreen> {
-  final PageController _pageController = PageController();
   final TextEditingController _pinController = TextEditingController();
-  int _currentPage = 0;
-  String _pin = '';
-  String _confirmPin = '';
-  bool _biometricAvailable = false;
-  List<BiometricType> _availableBiometrics = [];
-  AuthMethod _selectedAuthMethod = AuthMethod.pin;
+  final TextEditingController _confirmPinController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _checkBiometricAvailability();
+    print('🔐 [SETUP] PIN 전용 인증 설정 화면 초기화');
   }
 
-  /// 생체인증 사용 가능 여부 확인
-  Future<void> _checkBiometricAvailability() async {
-    final isAvailable = await AuthService.isBiometricAvailable();
-    final availableBiometrics = await AuthService.getAvailableBiometrics();
-    
+  @override
+  void dispose() {
+    _pinController.dispose();
+    _confirmPinController.dispose();
+    super.dispose();
+  }
+
+  /// PIN 설정 저장
+  Future<void> _savePinSetup() async {
+    final pin = _pinController.text.trim();
+    final confirmPin = _confirmPinController.text.trim();
+
+    // 입력 검증
+    if (pin.isEmpty || confirmPin.isEmpty) {
+      setState(() {
+        _errorMessage = 'PIN을 입력해주세요.';
+      });
+      return;
+    }
+
+    if (pin.length < 4) {
+      setState(() {
+        _errorMessage = 'PIN은 최소 4자리 이상이어야 합니다.';
+      });
+      return;
+    }
+
+    if (pin.length > 10) {
+      setState(() {
+        _errorMessage = 'PIN은 최대 10자리까지 입력 가능합니다.';
+      });
+      return;
+    }
+
+    if (pin != confirmPin) {
+      setState(() {
+        _errorMessage = 'PIN이 일치하지 않습니다. 다시 확인해주세요.';
+      });
+      return;
+    }
+
+    // 숫자만 허용
+    if (!RegExp(r'^\d+$').hasMatch(pin)) {
+      setState(() {
+        _errorMessage = 'PIN은 숫자만 입력 가능합니다.';
+      });
+      return;
+    }
+
     setState(() {
-      _biometricAvailable = isAvailable && availableBiometrics.isNotEmpty;
-      _availableBiometrics = availableBiometrics;
+      _isLoading = true;
+      _errorMessage = null;
     });
-  }
 
-  /// 다음 페이지로 이동
-  void _nextPage() {
-    if (_currentPage < 2) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  /// 이전 페이지로 이동
-  void _previousPage() {
-    if (_currentPage > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  /// PIN 설정 완료
-  Future<void> _completeSetup() async {
     try {
-      // PIN 저장
-      await AuthService.savePin(_pin);
-      
-      // 인증 방법 설정
-      await AuthService.setAuthMethod(_selectedAuthMethod);
-      
-      // 생체인증 활성화 설정
-      if (_selectedAuthMethod == AuthMethod.biometric) {
-        await AuthService.setBiometricEnabled(true);
-      }
+      print('🔐 [SETUP] PIN 설정 저장 시작: 길이=${pin.length}');
 
-      // 최초 설정 완료 표시
-      await DataService.setNotFirstLaunch();
+      // PIN 저장
+      await AuthService.savePin(pin);
       
-      // 세션 PIN 설정 (메모 저장을 위해 필요)
-      DataService.setSessionPin(_pin);
-      
-      // 메인 화면으로 이동
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/');
-      }
+      // 인증 방법을 PIN으로 설정
+      await AuthService.setAuthMethod(AuthMethod.pin);
+
+      print('✅ [SETUP] PIN 설정 완료');
+
+      // 성공 피드백
+      HapticFeedback.lightImpact();
+
+      // 성공 메시지 표시
+      _showSuccessDialog();
+
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('설정 저장 중 오류가 발생했습니다: $e'),
-            backgroundColor: Colors.red,
+      print('❌ [SETUP] PIN 설정 중 오류: $e');
+      
+      setState(() {
+        _errorMessage = 'PIN 설정 중 오류가 발생했습니다: $e';
+      });
+      
+      // 실패 피드백
+      HapticFeedback.heavyImpact();
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// 성공 다이얼로그 표시
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.check_circle,
+              color: Colors.green[600],
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'PIN 설정 완료',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'PIN이 성공적으로 설정되었습니다.\n이제 앱을 안전하게 사용할 수 있습니다.',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // 다이얼로그 닫기
+              Navigator.of(context).pushReplacementNamed('/main'); // 메인 화면으로 이동
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue[600],
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              '시작하기',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
-        );
-      }
+        ],
+      ),
+    );
+  }
+
+  /// 오류 메시지 초기화
+  void _clearError() {
+    if (_errorMessage != null) {
+      setState(() {
+        _errorMessage = null;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('보안 설정'),
-        automaticallyImplyLeading: false,
-      ),
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentPage = index;
-          });
-        },
-        children: [
-          _buildWelcomePage(),
-          _buildPinSetupPage(),
-          _buildAuthMethodSelectionPage(),
-        ],
-      ),
-    );
-  }
-
-  /// 환영 페이지
-  Widget _buildWelcomePage() {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.security,
-            size: 80,
-            color: Colors.blue,
-          ),
-          const SizedBox(height: 32),
-          const Text(
-            '보안 메모장에 오신 것을 환영합니다!',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            '소중한 메모를 안전하게 보호하기 위해\n보안 설정을 진행하겠습니다.',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 48),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _nextPage,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                '시작하기',
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// PIN 설정 페이지
-  Widget _buildPinSetupPage() {
-    final isConfirmMode = _pin.isNotEmpty;
-    
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.lock,
-            size: 60,
-            color: Colors.blue,
-          ),
-          const SizedBox(height: 32),
-          Text(
-            isConfirmMode ? 'PIN 번호를 다시 입력해주세요' : 'PIN 번호를 설정해주세요',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isConfirmMode 
-                ? '확인을 위해 동일한 PIN을 입력해주세요'
-                : '4자리 숫자로 PIN을 설정해주세요',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 48),
-          Pinput(
-            key: ValueKey(isConfirmMode ? 'confirm' : 'initial'),
-            controller: _pinController,
-            length: 4,
-            obscureText: true,
-            autofocus: true,
-            defaultPinTheme: PinTheme(
-              width: 56,
-              height: 56,
-              textStyle: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            focusedPinTheme: PinTheme(
-              width: 56,
-              height: 56,
-              textStyle: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.blue, width: 2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onCompleted: (pin) {
-              if (isConfirmMode) {
-                if (pin == _pin) {
-                  _confirmPin = pin;
-                  _nextPage();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('PIN이 일치하지 않습니다. 다시 입력해주세요.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  setState(() {
-                    _pin = '';
-                    _confirmPin = '';
-                  });
-                  _pinController.clear();
-                }
-              } else {
-                setState(() {
-                  _pin = pin;
-                });
-                _pinController.clear();
-                // 잠시 후 화면 업데이트를 위해 약간의 지연
-                Future.delayed(const Duration(milliseconds: 100), () {
-                  if (mounted) {
-                    setState(() {});
-                  }
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 48),
-          if (_currentPage > 0)
-            TextButton(
-              onPressed: _previousPage,
-              child: const Text('이전'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// 인증 방법 선택 페이지
-  Widget _buildAuthMethodSelectionPage() {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.fingerprint,
-            size: 60,
-            color: Colors.blue,
-          ),
-          const SizedBox(height: 32),
-          const Text(
-            '인증 방법을 선택해주세요',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            '앱을 실행할 때 사용할 인증 방법을 선택하세요',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 48),
-          
-          // PIN 인증 옵션
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.lock, color: Colors.blue),
-              title: const Text('PIN 번호'),
-              subtitle: const Text('4자리 숫자로 인증합니다'),
-              trailing: Radio<AuthMethod>(
-                value: AuthMethod.pin,
-                groupValue: _selectedAuthMethod,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedAuthMethod = value!;
-                  });
-                },
-              ),
-              onTap: () {
-                setState(() {
-                  _selectedAuthMethod = AuthMethod.pin;
-                });
-              },
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // 생체인증 옵션
-          Card(
-            child: ListTile(
-              leading: Icon(
-                Icons.fingerprint,
-                color: _biometricAvailable ? Colors.blue : Colors.grey,
-              ),
-              title: Text(
-                _availableBiometrics.isNotEmpty
-                    ? _availableBiometrics.map((type) => 
-                        AuthService.getBiometricTypeDisplayName(type)).join(', ')
-                    : '생체인증',
-              ),
-              subtitle: Text(
-                _biometricAvailable 
-                    ? '생체인증으로 빠르고 안전하게 인증합니다'
-                    : '이 기기에서는 생체인증을 사용할 수 없습니다',
-              ),
-              trailing: Radio<AuthMethod>(
-                value: AuthMethod.biometric,
-                groupValue: _selectedAuthMethod,
-                onChanged: _biometricAvailable ? (value) {
-                  setState(() {
-                    _selectedAuthMethod = value!;
-                  });
-                } : null,
-              ),
-              onTap: _biometricAvailable ? () {
-                setState(() {
-                  _selectedAuthMethod = AuthMethod.biometric;
-                });
-              } : null,
-              enabled: _biometricAvailable,
-            ),
-          ),
-          
-          const SizedBox(height: 48),
-          
-          Row(
+      backgroundColor: Colors.grey[50],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: _previousPage,
-                  child: const Text('이전'),
+              // 헤더
+              Container(
+                margin: const EdgeInsets.only(bottom: 48),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.security,
+                      size: 80,
+                      color: Colors.blue[600],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '보안 설정',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'PIN을 설정하여 메모를 안전하게 보호하세요',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton(
-                  onPressed: _completeSetup,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+
+              // PIN 설정 카드
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                  child: const Text(
-                    '설정 완료',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 제목
+                    Text(
+                      'PIN 설정',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // PIN 입력 필드
+                    TextField(
+                      controller: _pinController,
+                      obscureText: true,
+                      keyboardType: TextInputType.number,
+                      maxLength: 10,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        letterSpacing: 4,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'PIN 입력',
+                        hintText: '4-10자리 숫자',
+                        counterText: '',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      onChanged: (value) => _clearError(),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // PIN 확인 입력 필드
+                    TextField(
+                      controller: _confirmPinController,
+                      obscureText: true,
+                      keyboardType: TextInputType.number,
+                      maxLength: 10,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        letterSpacing: 4,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'PIN 확인',
+                        hintText: '동일한 PIN 재입력',
+                        counterText: '',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      onChanged: (value) => _clearError(),
+                      onSubmitted: (value) => _savePinSetup(),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // 설정 완료 버튼
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _savePinSetup,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text(
+                              'PIN 설정 완료',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+
+                    // 오류 메시지
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red[200]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.red[600],
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
+                                style: TextStyle(
+                                  color: Colors.red[700],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // 보안 안내
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.blue[600],
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '보안 안내',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[800],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '• PIN은 4-10자리 숫자로 설정하세요\n'
+                      '• 다른 사람이 쉽게 추측할 수 없는 번호를 사용하세요\n'
+                      '• PIN을 잊으면 앱을 재설치해야 합니다',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.blue[700],
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    _pinController.dispose();
-    super.dispose();
   }
 } 

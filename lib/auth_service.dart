@@ -1,361 +1,152 @@
-import 'package:flutter/material.dart';
-import 'package:local_auth/local_auth.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
-import 'package:flutter/services.dart'; // PlatformException 추가
 
-/// 인증 방법 열거형
+/// 인증 방법 열거형 (PIN 전용)
 enum AuthMethod {
-  pin,        // PIN 번호 인증
-  biometric,  // 지문/생체 인증
+  pin, // PIN 번호 인증만 지원
 }
 
 /// 인증 서비스 클래스
-/// PIN 인증과 지문인증을 통합 관리합니다.
+/// PIN 기반 인증을 담당합니다.
 class AuthService {
   static const String _pinKey = 'app_pin';
   static const String _authMethodKey = 'auth_method';
-  static const String _biometricEnabledKey = 'biometric_enabled';
   
-  static final LocalAuthentication _localAuth = LocalAuthentication();
+  // SecureStorage 인스턴스
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
-  /// 생체인증 사용 가능 여부 확인
-  static Future<bool> isBiometricAvailable() async {
-    try {
-      final bool isAvailable = await _localAuth.canCheckBiometrics;
-      final bool isDeviceSupported = await _localAuth.isDeviceSupported();
-      return isAvailable && isDeviceSupported;
-    } catch (e) {
-      print('생체인증 사용 가능 여부 확인 중 오류: $e');
-      return false;
-    }
-  }
-
-  /// 사용 가능한 생체인증 방법 목록 조회
-  static Future<List<BiometricType>> getAvailableBiometrics() async {
-    try {
-      return await _localAuth.getAvailableBiometrics();
-    } catch (e) {
-      print('사용 가능한 생체인증 방법 조회 중 오류: $e');
-      return [];
-    }
-  }
-
-  /// PIN 저장 (단순화된 평문 저장 - 디버깅용)
+  /// PIN 저장
   static Future<void> savePin(String pin) async {
     try {
-      print('🔐 [DEBUG] PIN 저장 시작');
-      print('📝 [DEBUG] 입력된 PIN: "$pin"');
-      print('📏 [DEBUG] PIN 길이: ${pin.length}');
+      print('🔐 [AUTH] PIN 저장 시작: 길이=${pin.length}');
       
-      // 단순하게 평문으로 저장 (임시)
+      // UTF-8 인코딩으로 PIN을 바이트로 변환
+      final pinBytes = utf8.encode(pin);
+      print('🔐 [AUTH] PIN 바이트 변환: ${pinBytes.length}바이트');
+      
+      // SHA-256 해시 생성
+      final hashedPin = sha256.convert(pinBytes).toString();
+      print('🔐 [AUTH] PIN 해시 생성: ${hashedPin.substring(0, 8)}...');
+      
+      // SharedPreferences에 해시된 PIN 저장
       final prefs = await SharedPreferences.getInstance();
-      final success = await prefs.setString(_pinKey, pin);
+      await prefs.setString(_pinKey, hashedPin);
+      print('🔐 [AUTH] SharedPreferences에 PIN 저장 완료');
       
-      print('💾 [DEBUG] SharedPreferences 저장 시도: $success');
+      // SecureStorage에 원본 PIN 백업 저장 (복구용)
+      await _secureStorage.write(key: '${_pinKey}_secure', value: pin);
+      print('🔐 [AUTH] SecureStorage에 PIN 백업 저장 완료');
       
-      // 저장 확인
-      final stored = prefs.getString(_pinKey);
-      print('🔍 [DEBUG] 저장된 값 확인: "$stored"');
-      print('✅ [DEBUG] 저장 성공 여부: ${stored == pin}');
+      // 저장 즉시 검증
+      final savedHash = prefs.getString(_pinKey);
+      final backupPin = await _secureStorage.read(key: '${_pinKey}_secure');
       
-      // SecureStorage에도 백업 저장
-      await _secureStorage.write(key: '${_pinKey}_backup', value: pin);
-      print('🔒 [DEBUG] SecureStorage 백업 완료');
-      
-      // 즉시 검증 테스트
-      final verification = await verifyPin(pin);
-      print('🧪 [DEBUG] 즉시 검증 결과: $verification');
-      
-      if (!verification) {
-        throw Exception('PIN 저장 후 검증 실패!');
+      if (savedHash == hashedPin && backupPin == pin) {
+        print('✅ [AUTH] PIN 저장 및 검증 성공');
+      } else {
+        print('❌ [AUTH] PIN 저장 검증 실패');
+        throw Exception('PIN 저장 후 검증에 실패했습니다.');
       }
       
-      print('🎉 [DEBUG] PIN 저장 완료!');
     } catch (e) {
-      print('❌ [DEBUG] PIN 저장 오류: $e');
+      print('❌ [AUTH] PIN 저장 중 오류: $e');
       rethrow;
     }
   }
 
-  /// PIN 검증 (단순화된 평문 비교 - 디버깅용)
+  /// PIN 검증
   static Future<bool> verifyPin(String pin) async {
     try {
-      print('🔍 [DEBUG] ===== PIN 검증 시작 =====');
-      print('📝 [DEBUG] 입력된 PIN: "$pin"');
-      print('📏 [DEBUG] 입력 PIN 길이: ${pin.length}');
-      print('🔤 [DEBUG] 입력 PIN 문자 코드: ${pin.codeUnits}');
+      print('🔐 [AUTH] PIN 검증 시작: 길이=${pin.length}');
       
       final prefs = await SharedPreferences.getInstance();
+      final savedHashedPin = prefs.getString(_pinKey);
       
-      // SharedPreferences에서 저장된 PIN 가져오기
-      final storedPin = prefs.getString(_pinKey);
-      print('💾 [DEBUG] 저장된 PIN: "${storedPin ?? 'null'}"');
-      
-      if (storedPin != null) {
-        print('📏 [DEBUG] 저장된 PIN 길이: ${storedPin.length}');
-        print('🔤 [DEBUG] 저장된 PIN 문자 코드: ${storedPin.codeUnits}');
-        print('🔍 [DEBUG] PIN 비교: "$pin" == "$storedPin"');
-        print('🔍 [DEBUG] 문자열 identical: ${identical(pin, storedPin)}');
-        print('🔍 [DEBUG] hashCode 비교: ${pin.hashCode} vs ${storedPin.hashCode}');
-        
-        // 문자별 비교
-        if (pin.length == storedPin.length) {
-          bool allMatch = true;
-          for (int i = 0; i < pin.length; i++) {
-            final inputChar = pin[i];
-            final storedChar = storedPin[i];
-            final charMatch = inputChar == storedChar;
-            print('🔍 [DEBUG] 문자 $i: "$inputChar" == "$storedChar" = $charMatch');
-            if (!charMatch) allMatch = false;
-          }
-          print('🔍 [DEBUG] 모든 문자 일치: $allMatch');
-        }
-        
-        final isMatch = pin == storedPin;
-        print('✅ [DEBUG] 최종 비교 결과: $isMatch');
-        
-        if (isMatch) {
-          print('🎉 [DEBUG] PIN 검증 성공!');
-          return true;
-        } else {
-          print('❌ [DEBUG] PIN 검증 실패 - 문자열 불일치');
-        }
-      } else {
-        print('❌ [DEBUG] 저장된 PIN이 없습니다');
+      if (savedHashedPin == null) {
+        print('❌ [AUTH] 저장된 PIN이 없습니다.');
+        return false;
       }
       
-      // 백업에서도 확인
-      final backupPin = await _secureStorage.read(key: '${_pinKey}_backup');
-      print('🔒 [DEBUG] 백업 PIN: "${backupPin ?? 'null'}"');
+      // 입력된 PIN을 해시화
+      final pinBytes = utf8.encode(pin);
+      final inputHashedPin = sha256.convert(pinBytes).toString();
       
-      if (backupPin != null && pin == backupPin) {
-        print('🔧 [DEBUG] 백업에서 복구 성공');
-        // 메인 저장소 복구
-        await prefs.setString(_pinKey, pin);
+      print('🔐 [AUTH] 저장된 해시: ${savedHashedPin.substring(0, 8)}...');
+      print('🔐 [AUTH] 입력된 해시: ${inputHashedPin.substring(0, 8)}...');
+      
+      // 1차 검증: 해시 비교
+      if (savedHashedPin == inputHashedPin) {
+        print('✅ [AUTH] PIN 검증 성공 (해시 일치)');
         return true;
       }
       
-      print('❌ [DEBUG] ===== PIN 검증 완전 실패 =====');
+      // 2차 검증: SecureStorage의 원본과 비교 (복구 메커니즘)
+      try {
+        final backupPin = await _secureStorage.read(key: '${_pinKey}_secure');
+        if (backupPin != null && backupPin == pin) {
+          print('✅ [AUTH] PIN 검증 성공 (백업과 일치)');
+          
+          // 주 저장소 복구
+          await savePin(pin);
+          print('🔄 [AUTH] 주 저장소 복구 완료');
+          
+          return true;
+        }
+      } catch (e) {
+        print('⚠️ [AUTH] 백업 PIN 확인 중 오류: $e');
+      }
+      
+      print('❌ [AUTH] PIN 검증 실패');
       return false;
+      
     } catch (e) {
-      print('❌ [DEBUG] PIN 검증 오류: $e');
-      print('❌ [DEBUG] 스택 트레이스: ${e.toString()}');
+      print('❌ [AUTH] PIN 검증 중 오류: $e');
       return false;
     }
   }
 
   /// PIN 설정 여부 확인
   static Future<bool> isPinSet() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_pinKey) != null;
-  }
-
-  /// 현재 설정된 인증 방법 조회
-  static Future<AuthMethod> getAuthMethod() async {
-    final prefs = await SharedPreferences.getInstance();
-    final methodString = prefs.getString(_authMethodKey) ?? 'pin';
-    return methodString == 'biometric' ? AuthMethod.biometric : AuthMethod.pin;
-  }
-
-  /// 인증 방법 설정
-  static Future<void> setAuthMethod(AuthMethod method) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_authMethodKey, method == AuthMethod.biometric ? 'biometric' : 'pin');
-    print('인증 방법 설정: ${method == AuthMethod.biometric ? '생체인증' : 'PIN'}');
-  }
-
-  /// 생체인증 활성화 여부 확인
-  static Future<bool> isBiometricEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_biometricEnabledKey) ?? false;
-  }
-
-  /// 생체인증 활성화/비활성화 설정
-  static Future<void> setBiometricEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_biometricEnabledKey, enabled);
-    print('생체인증 설정: ${enabled ? '활성화' : '비활성화'}');
-  }
-
-  /// 생체인증 실행
-  static Future<bool> authenticateWithBiometric() async {
     try {
-      print('👆 [BIOMETRIC] ===== 생체인증 시작 =====');
-      
-      final bool isAvailable = await isBiometricAvailable();
-      print('📱 [BIOMETRIC] 생체인증 사용 가능: $isAvailable');
-      
-      if (!isAvailable) {
-        print('❌ [BIOMETRIC] 생체인증을 사용할 수 없습니다.');
-        return false;
-      }
-
-      final availableBiometrics = await getAvailableBiometrics();
-      print('🔍 [BIOMETRIC] 사용 가능한 생체인증: ${availableBiometrics.map((e) => getBiometricTypeDisplayName(e)).join(', ')}');
-
-      if (availableBiometrics.isEmpty) {
-        print('❌ [BIOMETRIC] 등록된 생체인증이 없습니다.');
-        return false;
-      }
-
-      print('👆 [BIOMETRIC] 인증 대화상자 실행 중...');
-      
-      // 1차 시도: 가장 호환성 높은 설정
-      try {
-        print('🔄 [BIOMETRIC] 1차 시도: 최대 호환성 모드');
-        final bool didAuthenticate = await _localAuth.authenticate(
-          localizedReason: '지문을 센서에 대주세요',
-          options: const AuthenticationOptions(
-            biometricOnly: false,        // PIN 폴백 허용
-            stickyAuth: false,           // 유연한 인증
-            useErrorDialogs: false,      // 커스텀 오류 처리
-            sensitiveTransaction: false, // 일반 거래로 설정
-          ),
-        );
-
-        if (didAuthenticate) {
-          print('✅ [BIOMETRIC] 1차 시도 성공!');
-          return true;
-        }
-        print('⚠️ [BIOMETRIC] 1차 시도 실패, 2차 시도 진행');
-      } catch (e) {
-        print('⚠️ [BIOMETRIC] 1차 시도 예외: $e');
-      }
-
-      // 2차 시도: 더 단순한 설정
-      try {
-        print('🔄 [BIOMETRIC] 2차 시도: 단순 모드');
-        await Future.delayed(Duration(milliseconds: 500)); // 잠시 대기
-        
-        final bool didAuthenticate = await _localAuth.authenticate(
-          localizedReason: '생체인증을 완료해주세요',
-          options: const AuthenticationOptions(
-            biometricOnly: false,
-            stickyAuth: false,
-            useErrorDialogs: true,
-            sensitiveTransaction: true,
-          ),
-        );
-
-        if (didAuthenticate) {
-          print('✅ [BIOMETRIC] 2차 시도 성공!');
-          return true;
-        }
-        print('⚠️ [BIOMETRIC] 2차 시도 실패, 3차 시도 진행');
-      } catch (e) {
-        print('⚠️ [BIOMETRIC] 2차 시도 예외: $e');
-      }
-
-      // 3차 시도: 레거시 호환 모드
-      try {
-        print('🔄 [BIOMETRIC] 3차 시도: 레거시 호환 모드');
-        await Future.delayed(Duration(milliseconds: 500)); // 잠시 대기
-        
-        final bool didAuthenticate = await _localAuth.authenticate(
-          localizedReason: '지문 인증',
-        );
-
-        if (didAuthenticate) {
-          print('✅ [BIOMETRIC] 3차 시도 성공!');
-          return true;
-        }
-        print('❌ [BIOMETRIC] 모든 시도 실패');
-      } catch (e) {
-        print('❌ [BIOMETRIC] 3차 시도 예외: $e');
-      }
-
-      print('❌ [BIOMETRIC] 모든 인증 시도 실패');
-      return false;
-      
-    } on PlatformException catch (e) {
-      print('❌ [BIOMETRIC] PlatformException 발생: ${e.code} - ${e.message}');
-      
-      // 구체적인 오류 코드별 처리
-      switch (e.code) {
-        case 'NotAvailable':
-          print('❌ [BIOMETRIC] 생체인증을 사용할 수 없습니다.');
-          break;
-        case 'NotEnrolled':
-          print('❌ [BIOMETRIC] 등록된 생체인증이 없습니다.');
-          break;
-        case 'LockedOut':
-          print('❌ [BIOMETRIC] 생체인증이 일시적으로 잠겼습니다. (5분 후 재시도)');
-          break;
-        case 'PermanentlyLockedOut':
-          print('❌ [BIOMETRIC] 생체인증이 영구적으로 잠겼습니다. (기기 재시작 필요)');
-          break;
-        case 'BiometricOnlyNotSupported':
-          print('❌ [BIOMETRIC] 생체인증 전용 모드가 지원되지 않습니다.');
-          break;
-        case 'UserCancel':
-          print('❌ [BIOMETRIC] 사용자가 인증을 취소했습니다.');
-          break;
-        case 'UserFallback':
-          print('❌ [BIOMETRIC] 사용자가 PIN 입력을 선택했습니다.');
-          break;
-        case 'SystemCancel':
-          print('❌ [BIOMETRIC] 시스템에서 인증을 취소했습니다.');
-          break;
-        case 'InvalidContext':
-          print('❌ [BIOMETRIC] 잘못된 컨텍스트입니다.');
-          break;
-        case 'BiometricNotRecognized':
-          print('❌ [BIOMETRIC] 생체인증을 인식할 수 없습니다.');
-          break;
-        case 'PasscodeNotSet':
-          print('❌ [BIOMETRIC] 기기에 잠금 화면이 설정되지 않았습니다.');
-          break;
-        case 'BiometricNotAvailable':
-          print('❌ [BIOMETRIC] 생체인증 하드웨어를 사용할 수 없습니다.');
-          break;
-        case 'OtherOperatingSystem':
-          print('❌ [BIOMETRIC] 지원되지 않는 운영체제입니다.');
-          break;
-        default:
-          print('❌ [BIOMETRIC] 알 수 없는 오류: ${e.code} - ${e.message}');
-      }
-      
-      print('❌ [BIOMETRIC] 전체 오류 정보: $e');
-      return false;
+      final prefs = await SharedPreferences.getInstance();
+      final hasPin = prefs.containsKey(_pinKey);
+      print('🔐 [AUTH] PIN 설정 여부: $hasPin');
+      return hasPin;
     } catch (e) {
-      print('❌ [BIOMETRIC] 예상치 못한 오류: $e');
-      print('❌ [BIOMETRIC] 오류 타입: ${e.runtimeType}');
+      print('❌ [AUTH] PIN 설정 확인 중 오류: $e');
       return false;
-    } finally {
-      print('👆 [BIOMETRIC] ===== 생체인증 종료 =====');
     }
   }
 
-  /// 통합 인증 실행
-  /// 설정된 인증 방법에 따라 PIN 또는 생체인증을 실행합니다.
+  /// 인증 방법 저장 (항상 PIN으로 설정)
+  static Future<void> setAuthMethod(AuthMethod method) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_authMethodKey, AuthMethod.pin.toString());
+      print('🔐 [AUTH] 인증 방법 설정: PIN 전용');
+    } catch (e) {
+      print('❌ [AUTH] 인증 방법 설정 중 오류: $e');
+      rethrow;
+    }
+  }
+
+  /// 인증 방법 조회 (항상 PIN 반환)
+  static Future<AuthMethod> getAuthMethod() async {
+    return AuthMethod.pin; // 항상 PIN 반환
+  }
+
+  /// 통합 인증 실행 (PIN만 지원)
   static Future<bool> authenticate({String? pin}) async {
     try {
-      final authMethod = await getAuthMethod();
-      
-      if (authMethod == AuthMethod.biometric) {
-        final biometricEnabled = await isBiometricEnabled();
-        if (biometricEnabled) {
-          return await authenticateWithBiometric();
-        } else {
-          // 생체인증이 비활성화된 경우 PIN으로 폴백
-          if (pin != null) {
-            return await verifyPin(pin);
-          }
-          return false;
-        }
-      } else {
-        // PIN 인증
-        if (pin != null) {
-          return await verifyPin(pin);
-        }
-        return false;
+      if (pin != null) {
+        return await verifyPin(pin);
       }
+      return false;
     } catch (e) {
-      print('인증 중 오류: $e');
+      print('❌ [AUTH] 인증 중 오류: $e');
       return false;
     }
   }
@@ -363,39 +154,20 @@ class AuthService {
   /// 인증 설정 초기화 (앱 재설치 시 등)
   static Future<void> resetAuthSettings() async {
     try {
-      print('🔄 인증 설정 초기화 시작');
+      print('🔄 [AUTH] 인증 설정 초기화 시작');
       
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_pinKey);
       await prefs.remove(_authMethodKey);
-      await prefs.remove(_biometricEnabledKey);
       
       // SecureStorage도 완전 삭제
       await _secureStorage.delete(key: '${_pinKey}_secure');
       await _secureStorage.deleteAll();
       
-      print('✅ 인증 설정이 완전히 초기화되었습니다.');
+      print('✅ [AUTH] 인증 설정이 완전히 초기화되었습니다.');
     } catch (e) {
-      print('❌ 인증 설정 초기화 중 오류: $e');
+      print('❌ [AUTH] 인증 설정 초기화 중 오류: $e');
       rethrow;
-    }
-  }
-
-  /// 생체인증 타입을 한글로 변환
-  static String getBiometricTypeDisplayName(BiometricType type) {
-    switch (type) {
-      case BiometricType.face:
-        return '얼굴 인식';
-      case BiometricType.fingerprint:
-        return '지문 인식';
-      case BiometricType.iris:
-        return '홍채 인식';
-      case BiometricType.weak:
-        return '기본 생체인증';
-      case BiometricType.strong:
-        return '강화 생체인증';
-      default:
-        return '생체인증';
     }
   }
 } 
