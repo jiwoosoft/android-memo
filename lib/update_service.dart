@@ -16,7 +16,7 @@ class UpdateService {
   /// 폴백 다운로드 URL (GitHub API 실패 시 사용)
   /// 수동으로 업데이트 필요
   static const String _fallbackDownloadUrl = 
-      'https://drive.google.com/file/d/1TeQtXOQ058Hob9bEGAr2L3Tz5pP1sOnq/view?usp=drivesdk'; // v2.2.16
+      'https://drive.google.com/file/d/1TeQtXOQ058Hob9bEGAr2L3Tz5pP1sOnq/view?usp=drivesdk'; // v2.2.16 실제 링크
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     print('🚀 [DEBUG] ===== 업데이트 확인 시작 =====');
@@ -183,6 +183,17 @@ class UpdateService {
       final major = int.tryParse(parts[0]) ?? 2;
       final minor = int.tryParse(parts[1]) ?? 2;
       final patch = int.tryParse(parts[2]) ?? 0;
+      
+      // v2.2.16에서는 더 이상 자동 업데이트 감지하지 않음 (무한 반복 방지)
+      if (currentVersion == '2.2.16') {
+        print('🛑 [DEBUG] v2.2.16에서는 자동 업데이트 감지 비활성화');
+        return UpdateCheckResult(
+          currentVersion: currentVersion,
+          latestVersion: currentVersion,
+          hasUpdate: false,
+          releaseInfo: null,
+        );
+      }
       
       // 다음 가능한 버전들 생성 (patch, minor, major 순서로)
       List<String> possibleVersions = [
