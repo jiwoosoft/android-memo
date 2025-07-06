@@ -2161,25 +2161,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onChanged: biometricAvailable ? (AuthMethod? value) async {
                   if (value != null) {
                     // 생체인증 테스트
-                    final authenticated = await AuthService.authenticateWithBiometric();
+                    bool authenticated = false;
+                    bool showForceOption = false;
+                    
+                    try {
+                      print('🔍 [SETTINGS] 지문인증 테스트 시작...');
+                      authenticated = await AuthService.authenticateWithBiometric();
+                      print('✅ [SETTINGS] 지문인증 테스트 결과: $authenticated');
+                    } catch (e) {
+                      print('❌ [SETTINGS] 지문인증 테스트 오류: $e');
+                      showForceOption = true;
+                    }
+                    
                     if (authenticated) {
+                      // 성공: 정상적으로 설정 변경
                       await AuthService.setAuthMethod(value);
                       await AuthService.setBiometricEnabled(true);
                       Navigator.pop(context);
                       
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('생체인증으로 설정되었습니다.'),
+                          content: Text('✅ 지문인증으로 설정되었습니다.'),
                           backgroundColor: Colors.green,
                         ),
                       );
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('생체인증에 실패했습니다. 설정이 변경되지 않았습니다.'),
-                          backgroundColor: Colors.red,
+                      // 실패: 강제 설정 옵션 제공
+                      print('⚠️ [SETTINGS] 지문인증 실패, 강제 설정 옵션 표시');
+                      
+                      final forceEnable = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: Colors.grey[850],
+                          title: Text('지문인증 설정', style: TextStyle(color: Colors.white)),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '지문인증 테스트에 실패했습니다.',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                '가능한 원인:',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                '• 지문 센서 문제\n• 등록된 지문 없음\n• 기기 호환성 문제\n• 권한 설정 문제',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                '그래도 지문인증을 강제로 활성화하시겠습니까?',
+                                style: TextStyle(color: Colors.orange),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                '⚠️ 강제 활성화 시 로그인에서 지문인증이 계속 실패할 수 있습니다.',
+                                style: TextStyle(color: Colors.red, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: Text('취소', style: TextStyle(color: Colors.grey)),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: Text('강제 활성화', style: TextStyle(color: Colors.orange)),
+                            ),
+                          ],
                         ),
                       );
+                      
+                      if (forceEnable == true) {
+                        // 강제 활성화
+                        print('🔧 [SETTINGS] 지문인증 강제 활성화');
+                        await AuthService.setAuthMethod(value);
+                        await AuthService.setBiometricEnabled(true);
+                        Navigator.pop(context);
+                        
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('⚠️ 지문인증이 강제로 활성화되었습니다.\n로그인 시 문제가 있으면 PIN을 사용하세요.'),
+                            backgroundColor: Colors.orange,
+                            duration: Duration(seconds: 5),
+                          ),
+                        );
+                      } else {
+                        // 취소
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('❌ 지문인증 설정이 취소되었습니다.\n\n해결 방법:\n• 기기 설정에서 지문 재등록\n• 앱 권한에서 생체인증 허용\n• PIN으로 계속 사용'),
+                            backgroundColor: Colors.red,
+                            duration: Duration(seconds: 7),
+                          ),
+                        );
+                      }
                     }
                   }
                 } : null,
