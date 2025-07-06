@@ -2368,7 +2368,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               print('🔗 업데이트 버튼 클릭됨');
               Navigator.pop(context);
               
-              final url = result.releaseInfo?.downloadUrl ?? 'https://drive.google.com/file/d/1RaeBI5HIXqIXO8ntlJ1f3W5lFyfHFTKF/view?usp=drivesdk';
+              final url = result.releaseInfo?.downloadUrl ?? 'https://drive.google.com/file/d/1cZ3mv6Vf778cNpOxHuOuWhSbl5517anm/view?usp=drivesdk';
               print('🌐 URL 실행 시도: $url');
               
               try {
