@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _biometricEnabled = false;
   AuthMethod _currentAuthMethod = AuthMethod.pin;
   List<BiometricType> _availableBiometrics = [];
+  String _biometricStatusMessage = '';
 
   @override
   void initState() {
@@ -27,30 +28,50 @@ class _LoginScreenState extends State<LoginScreen> {
   /// 인증 시스템 초기화
   Future<void> _initializeAuth() async {
     try {
+      print('🔐 [INIT] ===== 인증 시스템 초기화 시작 =====');
+      
       // 생체인증 사용 가능 여부 확인
       final biometricAvailable = await AuthService.isBiometricAvailable();
       final biometricEnabled = await AuthService.isBiometricEnabled();
       final currentAuthMethod = await AuthService.getAuthMethod();
       final availableBiometrics = await AuthService.getAvailableBiometrics();
       
+      print('🔐 [INIT] 생체인증 사용 가능: $biometricAvailable');
+      print('🔐 [INIT] 생체인증 활성화: $biometricEnabled');
+      print('🔐 [INIT] 현재 인증 방법: $currentAuthMethod');
+      print('🔐 [INIT] 사용 가능한 생체인증: ${availableBiometrics.map((e) => AuthService.getBiometricTypeDisplayName(e)).join(', ')}');
+
+      // 생체인증 상태 메시지 생성
+      String statusMessage = '';
+      if (!biometricAvailable) {
+        statusMessage = '이 기기에서는 생체인증을 사용할 수 없습니다.';
+      } else if (availableBiometrics.isEmpty) {
+        statusMessage = '등록된 생체인증이 없습니다. 기기 설정에서 지문을 등록해주세요.';
+      } else if (!biometricEnabled) {
+        statusMessage = '생체인증이 비활성화되어 있습니다.';
+      } else {
+        statusMessage = '생체인증이 준비되었습니다.';
+      }
+      
       setState(() {
         _biometricAvailable = biometricAvailable;
         _biometricEnabled = biometricEnabled;
         _currentAuthMethod = currentAuthMethod;
         _availableBiometrics = availableBiometrics;
+        _biometricStatusMessage = statusMessage;
       });
 
-      print('🔐 [INIT] 생체인증 사용 가능: $_biometricAvailable');
-      print('🔐 [INIT] 생체인증 활성화: $_biometricEnabled');
-      print('🔐 [INIT] 현재 인증 방법: $_currentAuthMethod');
-      print('🔐 [INIT] 사용 가능한 생체인증: ${_availableBiometrics.map((e) => AuthService.getBiometricTypeDisplayName(e)).join(', ')}');
-
-      // 생체인증이 설정되어 있다면 자동으로 실행
-      if (_currentAuthMethod == AuthMethod.biometric && _biometricEnabled && _biometricAvailable) {
-        _loginWithBiometric();
+      // 지문인증이 설정되어 있다면 UI를 지문인증 모드로 변경 (자동 실행 제거)
+      if (currentAuthMethod == AuthMethod.biometric && biometricEnabled && biometricAvailable) {
+        print('🔐 [INIT] 지문인증 모드로 설정됨 (자동 실행하지 않음)');
       }
+      
+      print('🔐 [INIT] ===== 인증 시스템 초기화 완료 =====');
     } catch (e) {
       print('❌ [INIT] 인증 시스템 초기화 오류: $e');
+      setState(() {
+        _biometricStatusMessage = '인증 시스템 초기화 중 오류가 발생했습니다: $e';
+      });
     }
   }
 
@@ -91,7 +112,33 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      print('👆 [LOGIN] 지문인증 로그인 시도');
+      print('👆 [LOGIN] ===== 지문인증 로그인 시작 =====');
+      
+      // 사전 체크
+      final biometricAvailable = await AuthService.isBiometricAvailable();
+      final biometricEnabled = await AuthService.isBiometricEnabled();
+      final availableBiometrics = await AuthService.getAvailableBiometrics();
+      
+      print('👆 [LOGIN] 생체인증 사용 가능: $biometricAvailable');
+      print('👆 [LOGIN] 생체인증 활성화: $biometricEnabled');
+      print('👆 [LOGIN] 사용 가능한 생체인증: ${availableBiometrics.map((e) => AuthService.getBiometricTypeDisplayName(e)).join(', ')}');
+      
+      if (!biometricAvailable) {
+        _showErrorMessage('이 기기에서는 생체인증을 사용할 수 없습니다.\n기기 설정에서 생체인증을 활성화해주세요.');
+        return;
+      }
+      
+      if (availableBiometrics.isEmpty) {
+        _showErrorMessage('등록된 생체인증이 없습니다.\n기기 설정에서 지문을 등록해주세요.');
+        return;
+      }
+      
+      if (!biometricEnabled) {
+        _showErrorMessage('앱에서 생체인증이 비활성화되어 있습니다.\n설정에서 생체인증을 활성화해주세요.');
+        return;
+      }
+      
+      print('👆 [LOGIN] 생체인증 실행 중...');
       final authenticated = await AuthService.authenticateWithBiometric();
       
       if (authenticated) {
@@ -101,15 +148,17 @@ class _LoginScreenState extends State<LoginScreen> {
         final savedPin = prefs.getString('app_pin') ?? '1234'; // 기본값
         await _navigateToMainApp(savedPin);
       } else {
-        _showErrorMessage('지문인증에 실패했습니다. PIN으로 로그인해주세요.');
+        print('👆 [LOGIN] ❌ 지문인증 실패');
+        _showErrorMessage('지문인증에 실패했습니다.\nPIN으로 로그인하거나 다시 시도해주세요.');
       }
     } catch (e) {
-      _showErrorMessage('지문인증 중 오류가 발생했습니다: $e');
       print('❌ [LOGIN] 지문인증 오류: $e');
+      _showErrorMessage('지문인증 중 오류가 발생했습니다.\n오류: $e\n\nPIN으로 로그인해주세요.');
     } finally {
       setState(() {
         _isLoading = false;
       });
+      print('👆 [LOGIN] ===== 지문인증 로그인 종료 =====');
     }
   }
 
@@ -132,6 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _currentAuthMethod = AuthMethod.pin;
       }
     });
+    print('🔄 [SWITCH] 인증 방법 전환: $_currentAuthMethod');
   }
 
   /// 오류 메시지 표시
@@ -140,7 +190,25 @@ class _LoginScreenState extends State<LoginScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: '확인',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+  }
+
+  /// 성공 메시지 표시
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -218,21 +286,62 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.teal, width: 2),
+                  border: Border.all(
+                    color: _biometricAvailable && _availableBiometrics.isNotEmpty 
+                        ? Colors.teal 
+                        : Colors.grey, 
+                    width: 2
+                  ),
                   color: Colors.grey[850],
                 ),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(60),
-                  onTap: _isLoading ? null : _loginWithBiometric,
+                  onTap: (_isLoading || !_biometricAvailable || _availableBiometrics.isEmpty) 
+                      ? null 
+                      : _loginWithBiometric,
                   child: Icon(
                     Icons.fingerprint,
                     size: 60,
-                    color: _isLoading ? Colors.grey : Colors.teal,
+                    color: _isLoading 
+                        ? Colors.grey 
+                        : (_biometricAvailable && _availableBiometrics.isNotEmpty 
+                            ? Colors.teal 
+                            : Colors.grey),
                   ),
                 ),
               ),
               SizedBox(height: 24),
-              if (!_isLoading)
+              
+              // 지문인증 상태 메시지
+              if (_biometricStatusMessage.isNotEmpty) ...[
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _biometricAvailable && _availableBiometrics.isNotEmpty 
+                        ? Colors.green.withOpacity(0.2)
+                        : Colors.orange.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _biometricAvailable && _availableBiometrics.isNotEmpty 
+                          ? Colors.green 
+                          : Colors.orange,
+                    ),
+                  ),
+                  child: Text(
+                    _biometricStatusMessage,
+                    style: TextStyle(
+                      color: _biometricAvailable && _availableBiometrics.isNotEmpty 
+                          ? Colors.green 
+                          : Colors.orange,
+                      fontSize: 12,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SizedBox(height: 16),
+              ],
+              
+              if (!_isLoading && _biometricAvailable && _availableBiometrics.isNotEmpty)
                 ElevatedButton(
                   onPressed: _loginWithBiometric,
                   style: ElevatedButton.styleFrom(
