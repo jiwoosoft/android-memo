@@ -124,17 +124,17 @@ class _LoginScreenState extends State<LoginScreen> {
       print('👆 [LOGIN] 사용 가능한 생체인증: ${availableBiometrics.map((e) => AuthService.getBiometricTypeDisplayName(e)).join(', ')}');
       
       if (!biometricAvailable) {
-        _showErrorMessage('이 기기에서는 생체인증을 사용할 수 없습니다.\n기기 설정에서 생체인증을 활성화해주세요.');
+        _showErrorMessage('🚫 생체인증 사용 불가\n\n이 기기에서는 생체인증을 사용할 수 없습니다.\n\n해결 방법:\n• 기기 설정 → 보안 → 생체인증 활성화\n• 기기 재시작 후 다시 시도\n• PIN으로 로그인 사용');
         return;
       }
       
       if (availableBiometrics.isEmpty) {
-        _showErrorMessage('등록된 생체인증이 없습니다.\n기기 설정에서 지문을 등록해주세요.');
+        _showErrorMessage('👆 지문 등록 필요\n\n등록된 생체인증이 없습니다.\n\n해결 방법:\n• 기기 설정 → 보안 → 지문인식\n• 지문을 등록한 후 다시 시도\n• 현재는 PIN으로 로그인하세요');
         return;
       }
       
       if (!biometricEnabled) {
-        _showErrorMessage('앱에서 생체인증이 비활성화되어 있습니다.\n설정에서 생체인증을 활성화해주세요.');
+        _showErrorMessage('⚙️ 앱 설정 확인 필요\n\n앱에서 생체인증이 비활성화되어 있습니다.\n\n해결 방법:\n• 설정 → 인증 방법 → 지문인증 활성화\n• 현재는 PIN으로 로그인하세요');
         return;
       }
       
@@ -143,23 +143,45 @@ class _LoginScreenState extends State<LoginScreen> {
       
       if (authenticated) {
         print('👆 [LOGIN] ✅ 지문인증 성공! 메모 앱으로 이동');
+        _showSuccessMessage('🎉 지문인증 성공!');
         // 지문인증 성공 시 저장된 PIN을 가져와서 세션 설정
         final prefs = await SharedPreferences.getInstance();
         final savedPin = prefs.getString('app_pin') ?? '1234'; // 기본값
         await _navigateToMainApp(savedPin);
       } else {
         print('👆 [LOGIN] ❌ 지문인증 실패');
-        _showErrorMessage('지문인증에 실패했습니다.\nPIN으로 로그인하거나 다시 시도해주세요.');
+        _showDetailedBiometricError();
       }
     } catch (e) {
       print('❌ [LOGIN] 지문인증 오류: $e');
-      _showErrorMessage('지문인증 중 오류가 발생했습니다.\n오류: $e\n\nPIN으로 로그인해주세요.');
+      _showErrorMessage('🚨 지문인증 오류\n\n지문인증 중 예상치 못한 오류가 발생했습니다.\n\n오류 정보: $e\n\n해결 방법:\n• 앱을 다시 시작해보세요\n• 기기를 재시작해보세요\n• PIN으로 로그인하세요\n• 문제가 지속되면 지문을 다시 등록해보세요');
     } finally {
       setState(() {
         _isLoading = false;
       });
       print('👆 [LOGIN] ===== 지문인증 로그인 종료 =====');
     }
+  }
+
+  /// 지문인증 실패 시 상세한 오류 메시지 표시
+  void _showDetailedBiometricError() {
+    _showErrorMessage(
+      '👆 지문인증 실패\n\n'
+      '지문인증에 실패했습니다.\n\n'
+      '가능한 원인:\n'
+      '• 등록된 지문과 일치하지 않음\n'
+      '• 지문 센서가 더러워짐\n'
+      '• 손가락이 젖어있거나 건조함\n'
+      '• 너무 빠르게 터치했음\n\n'
+      '해결 방법:\n'
+      '• 지문 센서를 깨끗이 닦아주세요\n'
+      '• 손가락을 깨끗이 닦아주세요\n'
+      '• 천천히 지문을 센서에 대주세요\n'
+      '• 등록된 다른 지문을 사용해보세요\n'
+      '• PIN으로 로그인하세요\n\n'
+      '문제가 지속되면 기기 설정에서\n'
+      '지문을 다시 등록해보세요.'
+    );
   }
 
   /// 메인 앱으로 이동

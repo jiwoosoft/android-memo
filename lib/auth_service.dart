@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import 'package:flutter/services.dart'; // PlatformException 추가
 
 /// 인증 방법 열거형
 enum AuthMethod {
@@ -183,32 +184,93 @@ class AuthService {
   /// 생체인증 실행
   static Future<bool> authenticateWithBiometric() async {
     try {
-      print('👆 생체인증 시작');
+      print('👆 [BIOMETRIC] ===== 생체인증 시작 =====');
       
       final bool isAvailable = await isBiometricAvailable();
-      print('📱 생체인증 사용 가능: $isAvailable');
+      print('📱 [BIOMETRIC] 생체인증 사용 가능: $isAvailable');
       
       if (!isAvailable) {
-        print('❌ 생체인증을 사용할 수 없습니다.');
+        print('❌ [BIOMETRIC] 생체인증을 사용할 수 없습니다.');
         return false;
       }
 
       final availableBiometrics = await getAvailableBiometrics();
-      print('🔍 사용 가능한 생체인증: ${availableBiometrics.map((e) => getBiometricTypeDisplayName(e)).join(', ')}');
+      print('🔍 [BIOMETRIC] 사용 가능한 생체인증: ${availableBiometrics.map((e) => getBiometricTypeDisplayName(e)).join(', ')}');
 
+      if (availableBiometrics.isEmpty) {
+        print('❌ [BIOMETRIC] 등록된 생체인증이 없습니다.');
+        return false;
+      }
+
+      print('👆 [BIOMETRIC] 인증 대화상자 실행 중...');
+      
+      // 더 호환성 있는 인증 옵션 사용
       final bool didAuthenticate = await _localAuth.authenticate(
         localizedReason: '앱에 접근하려면 생체인증을 완료해주세요.',
         options: const AuthenticationOptions(
-          biometricOnly: true,
-          stickyAuth: true,
+          biometricOnly: false,      // PIN 폴백 허용으로 호환성 향상
+          stickyAuth: false,         // 더 유연한 인증
+          useErrorDialogs: true,     // 시스템 오류 다이얼로그 표시
+          sensitiveTransaction: true, // 민감한 거래로 표시
         ),
       );
 
-      print('✅ 생체인증 결과: ${didAuthenticate ? '성공' : '실패'}');
+      print('✅ [BIOMETRIC] 생체인증 결과: ${didAuthenticate ? '성공' : '실패'}');
+      
+      if (didAuthenticate) {
+        print('🎉 [BIOMETRIC] 생체인증 성공!');
+      } else {
+        print('❌ [BIOMETRIC] 생체인증 실패 - 사용자가 취소했거나 인증에 실패했습니다.');
+      }
+      
       return didAuthenticate;
-    } catch (e) {
-      print('❌ 생체인증 중 오류: $e');
+    } on PlatformException catch (e) {
+      print('❌ [BIOMETRIC] PlatformException 발생: ${e.code} - ${e.message}');
+      
+      // 구체적인 오류 코드별 처리
+      switch (e.code) {
+        case 'NotAvailable':
+          print('❌ [BIOMETRIC] 생체인증을 사용할 수 없습니다.');
+          break;
+        case 'NotEnrolled':
+          print('❌ [BIOMETRIC] 등록된 생체인증이 없습니다.');
+          break;
+        case 'LockedOut':
+          print('❌ [BIOMETRIC] 생체인증이 일시적으로 잠겼습니다.');
+          break;
+        case 'PermanentlyLockedOut':
+          print('❌ [BIOMETRIC] 생체인증이 영구적으로 잠겼습니다.');
+          break;
+        case 'BiometricOnlyNotSupported':
+          print('❌ [BIOMETRIC] 생체인증 전용 모드가 지원되지 않습니다.');
+          break;
+        case 'UserCancel':
+          print('❌ [BIOMETRIC] 사용자가 인증을 취소했습니다.');
+          break;
+        case 'UserFallback':
+          print('❌ [BIOMETRIC] 사용자가 PIN 입력을 선택했습니다.');
+          break;
+        case 'SystemCancel':
+          print('❌ [BIOMETRIC] 시스템에서 인증을 취소했습니다.');
+          break;
+        case 'InvalidContext':
+          print('❌ [BIOMETRIC] 잘못된 컨텍스트입니다.');
+          break;
+        case 'BiometricNotRecognized':
+          print('❌ [BIOMETRIC] 생체인증을 인식할 수 없습니다.');
+          break;
+        default:
+          print('❌ [BIOMETRIC] 알 수 없는 오류: ${e.code} - ${e.message}');
+      }
+      
+      print('❌ [BIOMETRIC] 전체 오류 정보: $e');
       return false;
+    } catch (e) {
+      print('❌ [BIOMETRIC] 예상치 못한 오류: $e');
+      print('❌ [BIOMETRIC] 오류 타입: ${e.runtimeType}');
+      return false;
+    } finally {
+      print('👆 [BIOMETRIC] ===== 생체인증 종료 =====');
     }
   }
 
