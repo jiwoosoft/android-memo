@@ -14,7 +14,7 @@ class UpdateService {
   static const String _backupApiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases';
   
   // 최신 APK 다운로드 URL (동적으로 업데이트됨)
-  static const String _fallbackDownloadUrl = 'https://drive.google.com/file/d/1fAoedQo_MysN65J6Xdu_90gIqoC8-kyq/view?usp=drivesdk';
+  static const String _fallbackDownloadUrl = 'https://drive.google.com/file/d/1zyu9kLyNSSkhEYxuIIbIoOYEvYEWp-2W/view?usp=drivesdk';
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
@@ -153,6 +153,28 @@ class UpdateService {
   static UpdateCheckResult _estimateLatestVersion(String currentVersion) {
     print('🤖 [UPDATE] 동적 버전 추정 시작...');
     
+    // 현재 알려진 최신 버전 (수동 업데이트)
+    const knownLatestVersion = '2.2.7';
+    
+    // 현재 버전과 알려진 최신 버전 비교
+    bool hasUpdate = _compareVersions(currentVersion, knownLatestVersion) < 0;
+    
+    if (hasUpdate) {
+      print('🎯 [UPDATE] 알려진 최신 버전 감지: $knownLatestVersion');
+      print('🔄 [UPDATE] 업데이트 필요: $hasUpdate');
+      
+      return UpdateCheckResult(
+        currentVersion: currentVersion,
+        latestVersion: knownLatestVersion,
+        hasUpdate: hasUpdate,
+        releaseInfo: ReleaseInfo(
+          version: knownLatestVersion,
+          body: _generateUpdateMessage(knownLatestVersion),
+          downloadUrl: _fallbackDownloadUrl,
+        ),
+      );
+    }
+    
     // 현재 버전을 기반으로 다음 버전 추정
     final parts = currentVersion.split('.');
     if (parts.length >= 3) {
@@ -161,22 +183,22 @@ class UpdateService {
       final patch = int.tryParse(parts[2]) ?? 0;
       
       // 현재 버전보다 높은 버전 생성
-      String estimatedVersion;
-      if (major < 2 || (major == 2 && minor < 2)) {
-        estimatedVersion = '2.2.0';  // 최소 2.2.0으로 설정
-      } else {
-        estimatedVersion = '$major.$minor.${patch + 1}';  // 패치 버전 증가
+      String estimatedVersion = '$major.$minor.${patch + 1}';
+      
+      // 최소 버전 보장
+      if (_compareVersions(estimatedVersion, '2.2.7') < 0) {
+        estimatedVersion = '2.2.7';
       }
       
-      bool hasUpdate = _compareVersions(currentVersion, estimatedVersion) < 0;
+      bool hasUpdateEstimated = _compareVersions(currentVersion, estimatedVersion) < 0;
       
       print('🎯 [UPDATE] 추정된 최신 버전: $estimatedVersion');
-      print('🔄 [UPDATE] 업데이트 필요: $hasUpdate');
+      print('🔄 [UPDATE] 업데이트 필요: $hasUpdateEstimated');
       
       return UpdateCheckResult(
         currentVersion: currentVersion,
         latestVersion: estimatedVersion,
-        hasUpdate: hasUpdate,
+        hasUpdate: hasUpdateEstimated,
         releaseInfo: ReleaseInfo(
           version: estimatedVersion,
           body: _generateUpdateMessage(estimatedVersion),
@@ -186,13 +208,13 @@ class UpdateService {
     }
     
     // 기본 최신 버전 (현재 빌드 기준)
-    const defaultLatestVersion = '2.2.0';
-    bool hasUpdate = _compareVersions(currentVersion, defaultLatestVersion) < 0;
+    const defaultLatestVersion = '2.2.7';
+    bool hasUpdateDefault = _compareVersions(currentVersion, defaultLatestVersion) < 0;
     
     return UpdateCheckResult(
       currentVersion: currentVersion,
       latestVersion: defaultLatestVersion,
-      hasUpdate: hasUpdate,
+      hasUpdate: hasUpdateDefault,
       releaseInfo: ReleaseInfo(
         version: defaultLatestVersion,
         body: _generateUpdateMessage(defaultLatestVersion),
@@ -229,6 +251,29 @@ class UpdateService {
 
   /// 업데이트 메시지 생성
   static String _generateUpdateMessage(String version) {
+    if (version == '2.2.7') {
+      return '''🚀 **메모 앱 업데이트 v$version**
+
+🎨 **UI/UX 개선:**
+- 🌙 **로그인 화면 다크모드** - 앱 전체와 일치하는 세련된 다크 테마
+- 🎯 **일관된 디자인** - 틸(teal) 포인트 컬러로 통일된 시각적 경험
+- 📖 **향상된 가독성** - 다크 배경에서 최적화된 텍스트 표시
+- ✨ **시각적 일관성** - 메인 화면과 로그인 화면의 완벽한 조화
+
+🔧 **기술적 개선:**
+- 로그인 화면 색상 스키마 완전 재설계
+- 오류 메시지 표시도 다크 테마에 맞게 조정
+- PIN 입력 필드 스타일링 개선
+
+🎯 **사용자 경험:**
+- 더 편안한 야간 사용 환경
+- 눈의 피로 감소
+- 전문적이고 모던한 앱 디자인
+
+⚠️ **주의사항:**
+네트워크 연결을 확인하고 최신 버전을 다운로드하세요.''';
+    }
+    
     return '''🚀 **메모 앱 업데이트 v$version**
 
 ✨ **주요 개선사항:**
