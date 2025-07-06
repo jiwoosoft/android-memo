@@ -2315,7 +2315,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showUpdateDialog(BuildContext context, UpdateCheckResult result) {
     print('📱 업데이트 다이얼로그 표시 중...');
-    print('다운로드 URL: ${result.releaseInfo.downloadUrl}');
+    print('다운로드 URL: ${result.releaseInfo?.downloadUrl ?? "정보 없음"}');
     
     showDialog(
       context: context,
@@ -2339,7 +2339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               '최신 버전: ${result.latestVersion}',
               style: TextStyle(color: Colors.white70),
             ),
-            if (result.releaseInfo.body.isNotEmpty) ...[
+            if (result.releaseInfo?.body?.isNotEmpty == true) ...[
               SizedBox(height: 16),
               Text(
                 '업데이트 내용:',
@@ -2347,7 +2347,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               SizedBox(height: 8),
               Text(
-                result.releaseInfo.body,
+                result.releaseInfo!.body,
                 style: TextStyle(color: Colors.white70),
                 maxLines: 5,
                 overflow: TextOverflow.ellipsis,
@@ -2368,7 +2368,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               print('🔗 업데이트 버튼 클릭됨');
               Navigator.pop(context);
               
-              final url = result.releaseInfo.downloadUrl;
+              final url = result.releaseInfo?.downloadUrl ?? 'https://drive.google.com/file/d/1bwbEADi-gVRSUjzHEKUZ5sL-ZZHfINsy/view?usp=drivesdk';
               print('🌐 URL 실행 시도: $url');
               
               try {
