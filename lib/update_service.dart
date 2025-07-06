@@ -16,7 +16,7 @@ class UpdateService {
   /// 폴백 다운로드 URL (GitHub API 실패 시 사용)
   /// 수동으로 업데이트 필요
   static const String _fallbackDownloadUrl = 
-      'https://drive.google.com/file/d/1TeQtXOQ058Hob9bEGAr2L3Tz5pP1sOnq/view?usp=drivesdk'; // v2.2.16 실제 링크
+      'https://drive.google.com/file/d/1zjTkYuhkLXcdkMjRZk9CCNPIaWTuH6zD/view?usp=drivesdk'; // v2.2.16 최종 링크
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     print('🚀 [DEBUG] ===== 업데이트 확인 시작 =====');
