@@ -14,7 +14,7 @@ class UpdateService {
   static const String _backupApiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases';
   
   // 최신 APK 다운로드 URL (동적으로 업데이트됨)
-  static const String _fallbackDownloadUrl = 'https://drive.google.com/file/d/1fAoedQo_MysN65J6Xdu_90gIqoC8-kyq/view?usp=drivesdk';
+  static const String _fallbackDownloadUrl = 'https://drive.google.com/file/d/1RX545k0zdVNjgiIcmhWb-1OOxpy8shin/view?usp=drivesdk';
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
@@ -153,6 +153,28 @@ class UpdateService {
   static UpdateCheckResult _estimateLatestVersion(String currentVersion) {
     print('🤖 [UPDATE] 동적 버전 추정 시작...');
     
+    // 현재 알려진 최신 버전 (수동 업데이트)
+    const knownLatestVersion = '2.2.8';
+    
+    // 현재 버전과 알려진 최신 버전 비교
+    bool hasUpdate = _compareVersions(currentVersion, knownLatestVersion) < 0;
+    
+    if (hasUpdate) {
+      print('🎯 [UPDATE] 알려진 최신 버전 감지: $knownLatestVersion');
+      print('🔄 [UPDATE] 업데이트 필요: $hasUpdate');
+      
+      return UpdateCheckResult(
+        currentVersion: currentVersion,
+        latestVersion: knownLatestVersion,
+        hasUpdate: hasUpdate,
+        releaseInfo: ReleaseInfo(
+          version: knownLatestVersion,
+          body: _generateUpdateMessage(knownLatestVersion),
+          downloadUrl: _fallbackDownloadUrl,
+        ),
+      );
+    }
+    
     // 현재 버전을 기반으로 다음 버전 추정
     final parts = currentVersion.split('.');
     if (parts.length >= 3) {
@@ -161,22 +183,22 @@ class UpdateService {
       final patch = int.tryParse(parts[2]) ?? 0;
       
       // 현재 버전보다 높은 버전 생성
-      String estimatedVersion;
-      if (major < 2 || (major == 2 && minor < 2)) {
-        estimatedVersion = '2.2.0';  // 최소 2.2.0으로 설정
-      } else {
-        estimatedVersion = '$major.$minor.${patch + 1}';  // 패치 버전 증가
+      String estimatedVersion = '$major.$minor.${patch + 1}';
+      
+      // 최소 버전 보장
+      if (_compareVersions(estimatedVersion, '2.2.8') < 0) {
+        estimatedVersion = '2.2.8';
       }
       
-      bool hasUpdate = _compareVersions(currentVersion, estimatedVersion) < 0;
+      bool hasUpdateEstimated = _compareVersions(currentVersion, estimatedVersion) < 0;
       
       print('🎯 [UPDATE] 추정된 최신 버전: $estimatedVersion');
-      print('🔄 [UPDATE] 업데이트 필요: $hasUpdate');
+      print('🔄 [UPDATE] 업데이트 필요: $hasUpdateEstimated');
       
       return UpdateCheckResult(
         currentVersion: currentVersion,
         latestVersion: estimatedVersion,
-        hasUpdate: hasUpdate,
+        hasUpdate: hasUpdateEstimated,
         releaseInfo: ReleaseInfo(
           version: estimatedVersion,
           body: _generateUpdateMessage(estimatedVersion),
@@ -186,13 +208,13 @@ class UpdateService {
     }
     
     // 기본 최신 버전 (현재 빌드 기준)
-    const defaultLatestVersion = '2.2.0';
-    bool hasUpdate = _compareVersions(currentVersion, defaultLatestVersion) < 0;
+    const defaultLatestVersion = '2.2.8';
+    bool hasUpdateDefault = _compareVersions(currentVersion, defaultLatestVersion) < 0;
     
     return UpdateCheckResult(
       currentVersion: currentVersion,
       latestVersion: defaultLatestVersion,
-      hasUpdate: hasUpdate,
+      hasUpdate: hasUpdateDefault,
       releaseInfo: ReleaseInfo(
         version: defaultLatestVersion,
         body: _generateUpdateMessage(defaultLatestVersion),
@@ -229,6 +251,25 @@ class UpdateService {
 
   /// 업데이트 메시지 생성
   static String _generateUpdateMessage(String version) {
+    if (version == '2.2.8') {
+      return '''🚀 **메모 앱 업데이트 v$version**
+
+🔧 **업데이트 시스템 개선:**
+- 🤖 **동적 버전 감지 강화** - GitHub 릴리즈 실패 시에도 안정적인 업데이트 감지
+- 📡 **백업 API 시스템** - 다중 경로를 통한 신뢰성 있는 업데이트 확인
+- 🔄 **폴백 다운로드 URL** - 네트워크 문제 시에도 최신 APK 다운로드 보장
+- 📊 **정확한 버전 비교** - 개선된 알고리즘으로 오탐지 방지
+
+🎯 **사용자 경험 개선:**
+- ⚡ **더 빠른 업데이트 감지** - 효율적인 3단계 확인 시스템
+- 📱 **안정적인 업데이트 알림** - 네트워크 상태와 관계없이 일관된 서비스
+- 🔗 **향상된 다운로드 링크** - 최신 버전으로 자동 연결
+- 💬 **상세한 업데이트 정보** - 각 버전별 맞춤 개선사항 안내
+
+⚠️ **주의사항:**
+네트워크 연결을 확인하고 최신 버전을 다운로드하세요.''';
+    }
+    
     return '''🚀 **메모 앱 업데이트 v$version**
 
 ✨ **주요 개선사항:**
