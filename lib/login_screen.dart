@@ -104,107 +104,130 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// 지문인증으로 로그인
+  /// 지문인증으로 로그인 시도
   Future<void> _loginWithBiometric() async {
+    if (_isLoading) return;
+    
     setState(() {
       _isLoading = true;
     });
 
+    print('👆 [LOGIN] ===== 지문인증 로그인 시작 =====');
+
     try {
-      print('👆 [LOGIN] ===== 지문인증 로그인 시작 =====');
-      
-      // 사전 체크
-      final biometricAvailable = await AuthService.isBiometricAvailable();
-      final biometricEnabled = await AuthService.isBiometricEnabled();
-      final availableBiometrics = await AuthService.getAvailableBiometrics();
-      
-      print('👆 [LOGIN] 생체인증 사용 가능: $biometricAvailable');
-      print('👆 [LOGIN] 생체인증 활성화: $biometricEnabled');
-      print('👆 [LOGIN] 사용 가능한 생체인증: ${availableBiometrics.map((e) => AuthService.getBiometricTypeDisplayName(e)).join(', ')}');
-      
-      if (!biometricAvailable) {
-        _showErrorMessage('🚫 생체인증 사용 불가\n\n이 기기에서는 생체인증을 사용할 수 없습니다.\n\n해결 방법:\n• 기기 설정 → 보안 → 생체인증 활성화\n• 기기 재시작 후 다시 시도\n• PIN으로 로그인 사용');
-        return;
-      }
-      
-      if (availableBiometrics.isEmpty) {
-        _showErrorMessage('👆 지문 등록 필요\n\n등록된 생체인증이 없습니다.\n\n해결 방법:\n• 기기 설정 → 보안 → 지문인식\n• 지문을 등록한 후 다시 시도\n• 현재는 PIN으로 로그인하세요');
-        return;
-      }
-      
-      if (!biometricEnabled) {
-        _showErrorMessage('⚙️ 앱 설정 확인 필요\n\n앱에서 생체인증이 비활성화되어 있습니다.\n\n해결 방법:\n• 설정 → 인증 방법 → 지문인증 활성화\n• 현재는 PIN으로 로그인하세요');
-        return;
-      }
-      
-      print('👆 [LOGIN] 생체인증 실행 중...');
+      print('🔍 [LOGIN] 지문인증 실행...');
       final authenticated = await AuthService.authenticateWithBiometric();
       
       if (authenticated) {
-        print('👆 [LOGIN] ✅ 지문인증 성공! 메모 앱으로 이동');
+        print('✅ [LOGIN] 지문인증 성공!');
         _showSuccessMessage('🎉 지문인증 성공!');
-        // 지문인증 성공 시 저장된 PIN을 가져와서 세션 설정
-        final prefs = await SharedPreferences.getInstance();
-        final savedPin = prefs.getString('app_pin') ?? '1234'; // 기본값
-        await _navigateToMainApp(savedPin);
+        
+        // 저장된 PIN을 가져와서 세션 설정
+        final savedPin = await AuthService.getSavedPin();
+        if (savedPin != null) {
+          await _navigateToMainApp(savedPin);
+        } else {
+          print('❌ [LOGIN] 저장된 PIN을 찾을 수 없음');
+          _showErrorMessage('저장된 PIN을 찾을 수 없습니다. 앱을 재설치해주세요.');
+        }
       } else {
-        print('👆 [LOGIN] ❌ 지문인증 실패');
-        _showDetailedBiometricError();
+        print('❌ [LOGIN] 지문인증 실패');
+        
+        // 지문인증 실패 시 자동으로 PIN 모드로 전환
+        await _showBiometricFailureDialog();
       }
-    } on PlatformException catch (e) {
-      print('❌ [LOGIN] PlatformException: ${e.code} - ${e.message}');
-      
-      // 구체적인 오류 코드별 사용자 안내
-      String errorMessage = '🚨 지문인증 오류\n\n';
-      String solution = '';
-      
-      switch (e.code) {
-        case 'NotAvailable':
-          errorMessage += '생체인증을 사용할 수 없습니다.';
-          solution = '• 기기 설정에서 잠금 화면 설정\n• 생체인증 기능 활성화\n• 기기 재시작 후 재시도';
-          break;
-        case 'NotEnrolled':
-          errorMessage += '등록된 지문이 없습니다.';
-          solution = '• 설정 → 보안 → 지문인식\n• 새 지문 등록 후 재시도\n• 여러 손가락 등록 권장';
-          break;
-        case 'LockedOut':
-          errorMessage += '지문인증이 일시적으로 잠겼습니다.';
-          solution = '• 5분 후 다시 시도\n• PIN으로 로그인 사용\n• 기기 잠금 해제 후 재시도';
-          break;
-        case 'PermanentlyLockedOut':
-          errorMessage += '지문인증이 영구적으로 잠겼습니다.';
-          solution = '• 기기 재시작 필요\n• PIN으로 로그인 사용\n• 지문 재등록 고려';
-          break;
-        case 'UserCancel':
-          errorMessage += '지문인증을 취소했습니다.';
-          solution = '• 다시 시도해보세요\n• PIN으로 로그인 가능';
-          break;
-        case 'BiometricNotRecognized':
-          errorMessage += '지문을 인식할 수 없습니다.';
-          solution = '• 지문 센서 청소\n• 손가락 청소 후 재시도\n• 다른 등록된 손가락 사용\n• 천천히 센서에 대기';
-          break;
-        case 'PasscodeNotSet':
-          errorMessage += '기기에 잠금 화면이 설정되지 않았습니다.';
-          solution = '• 설정 → 보안 → 화면 잠금\n• PIN, 패턴, 비밀번호 설정\n• 설정 후 지문 등록';
-          break;
-        case 'BiometricNotAvailable':
-          errorMessage += '생체인증 하드웨어를 사용할 수 없습니다.';
-          solution = '• 기기 재시작\n• 시스템 업데이트 확인\n• PIN 로그인 사용';
-          break;
-        default:
-          errorMessage += '예상치 못한 오류가 발생했습니다.';
-          solution = '• 앱 재시작\n• 기기 재시작\n• PIN으로 로그인\n• 오류 코드: ${e.code}';
-      }
-      
-      _showErrorMessage('$errorMessage\n\n해결 방법:\n$solution');
     } catch (e) {
       print('❌ [LOGIN] 지문인증 오류: $e');
-      _showErrorMessage('🚨 지문인증 오류\n\n지문인증 중 예상치 못한 오류가 발생했습니다.\n\n오류 정보: $e\n\n해결 방법:\n• 앱을 다시 시작해보세요\n• 기기를 재시작해보세요\n• PIN으로 로그인하세요\n• 문제가 지속되면 지문을 다시 등록해보세요');
+      
+      // 오류 발생 시에도 PIN 모드 전환 옵션 제공
+      await _showBiometricFailureDialog();
     } finally {
       setState(() {
         _isLoading = false;
       });
       print('👆 [LOGIN] ===== 지문인증 로그인 종료 =====');
+    }
+  }
+
+  /// 지문인증 실패 시 PIN 모드 전환 다이얼로그
+  Future<void> _showBiometricFailureDialog() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: Text('👆 지문인증 실패', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '지문인증에 실패했습니다.',
+              style: TextStyle(color: Colors.white70),
+            ),
+            SizedBox(height: 16),
+            Text(
+              '다음 중 선택하세요:',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '• PIN으로 로그인\n• 지문인증 다시 시도\n• 지문인증 완전히 비활성화',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'retry'),
+            child: Text('다시 시도', style: TextStyle(color: Colors.blue)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'disable'),
+            child: Text('지문인증 끄기', style: TextStyle(color: Colors.orange)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, 'pin'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+            child: Text('PIN 로그인', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (result == 'pin') {
+      // PIN 모드로 전환
+      setState(() {
+        _currentAuthMethod = AuthMethod.pin;
+      });
+      print('🔄 [LOGIN] 지문인증 실패로 PIN 모드 전환');
+    } else if (result == 'disable') {
+      // 지문인증 완전히 비활성화
+      await _disableBiometricAndSwitchToPin();
+    } else if (result == 'retry') {
+      // 다시 시도
+      Future.delayed(Duration(milliseconds: 500), () {
+        if (mounted) _loginWithBiometric();
+      });
+    }
+  }
+
+  /// 지문인증 비활성화하고 PIN 모드로 전환
+  Future<void> _disableBiometricAndSwitchToPin() async {
+    try {
+      print('🔧 [LOGIN] 지문인증 비활성화 중...');
+      await AuthService.setAuthMethod(AuthMethod.pin);
+      await AuthService.setBiometricEnabled(false);
+      
+      setState(() {
+        _currentAuthMethod = AuthMethod.pin;
+        _biometricEnabled = false;
+      });
+      
+      _showSuccessMessage('✅ 지문인증이 비활성화되었습니다. 이제 PIN으로만 로그인할 수 있습니다.');
+      print('✅ [LOGIN] 지문인증 비활성화 완료');
+    } catch (e) {
+      print('❌ [LOGIN] 지문인증 비활성화 오류: $e');
+      _showErrorMessage('지문인증 비활성화 중 오류가 발생했습니다: $e');
     }
   }
 
@@ -416,6 +439,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: 16),
               ],
               
+              // 지문인증 버튼
               if (!_isLoading && _biometricAvailable && _availableBiometrics.isNotEmpty)
                 ElevatedButton(
                   onPressed: _loginWithBiometric,
@@ -426,6 +450,62 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Text('지문인증 시작'),
                 ),
+              
+              SizedBox(height: 16),
+              
+              // PIN으로 로그인 버튼 (항상 표시)
+              OutlinedButton(
+                onPressed: _isLoading ? null : () {
+                  setState(() {
+                    _currentAuthMethod = AuthMethod.pin;
+                  });
+                  print('🔄 [LOGIN] 사용자가 PIN 모드로 전환');
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  side: BorderSide(color: Colors.white70),
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                ),
+                child: Text('PIN으로 로그인'),
+              ),
+              
+              SizedBox(height: 16),
+              
+              // 지문인증 포기 버튼
+              TextButton(
+                onPressed: _isLoading ? null : () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: Colors.grey[850],
+                      title: Text('지문인증 비활성화', style: TextStyle(color: Colors.white)),
+                      content: Text(
+                        '지문인증을 완전히 비활성화하시겠습니까?\n\n이후 PIN으로만 로그인할 수 있습니다.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: Text('취소', style: TextStyle(color: Colors.grey)),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                          child: Text('비활성화', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
+                  
+                  if (confirm == true) {
+                    await _disableBiometricAndSwitchToPin();
+                  }
+                },
+                child: Text(
+                  '지문인증 완전히 끄기',
+                  style: TextStyle(color: Colors.orange),
+                ),
+              ),
             ]
             
             // PIN 입력 UI

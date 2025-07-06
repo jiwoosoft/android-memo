@@ -3,7 +3,7 @@ description: "간단한 메모장"
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 2.1.7+73
+version: 2.1.8+74
 
 environment:
   sdk: ^3.8.1
