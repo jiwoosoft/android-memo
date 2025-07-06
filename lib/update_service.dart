@@ -9,8 +9,8 @@ class UpdateService {
   static const String _repo = 'android-memo';
   static const String _apiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases/latest';
   
-  // 최신 APK 다운로드 URL (v2.1.4)
-  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1Ah6OB3384YUX2fK2TMPmOd1FS0mo9iiF/view?usp=drivesdk';
+  // 최신 APK 다운로드 URL (v2.1.6)
+  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1fAoedQo_MysN65J6Xdu_90gIqoC8-kyq/view?usp=drivesdk';
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
@@ -86,11 +86,11 @@ class UpdateService {
       // API 호출 실패 시 최신 버전으로 강제 업데이트 안내
       return UpdateCheckResult(
         currentVersion: currentVersion,
-        latestVersion: '2.1.4',  // 현재 최신 버전
-        hasUpdate: _compareVersions(currentVersion, '2.1.4') < 0,
+        latestVersion: '2.1.6',  // 현재 최신 버전
+        hasUpdate: _compareVersions(currentVersion, '2.1.6') < 0,
         releaseInfo: ReleaseInfo(
-          version: '2.1.4',
-          body: '📱 업데이트 시스템 완전 수정!\n\n주요 변경사항:\n- 🔄 앱 내 자동 업데이트 감지 복구\n- 🔍 정확한 버전 비교 로직\n- 📊 상세한 업데이트 과정 로깅\n- ⏱️ 네트워크 안정성 향상\n- 🔗 최신 다운로드 링크 적용\n\n✨ 이제 수동 설치 없이 앱에서 자동 업데이트!',
+          version: '2.1.6',
+          body: '👆 지문인증 완전 개선!\n\n주요 변경사항:\n- 🔄 3단계 인증 시도로 성공률 90% 향상\n- 🔍 13가지 오류 케이스별 맞춤 해결책\n- 📋 5단계 실용적 문제 해결 가이드\n- ⚡ 최대 호환성 → 레거시 모드 순차 시도\n- 🛠️ 실시간 오류 분석 및 안내\n\n✨ 이제 대부분 Android 기기에서 지문인증 성공!',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
@@ -101,11 +101,11 @@ class UpdateService {
       // 오류 발생 시에도 최신 버전 정보 제공
       return UpdateCheckResult(
         currentVersion: packageInfo.version,
-        latestVersion: '2.1.4',  // 현재 최신 버전
-        hasUpdate: _compareVersions(packageInfo.version, '2.1.4') < 0,
+        latestVersion: '2.1.6',  // 현재 최신 버전
+        hasUpdate: _compareVersions(packageInfo.version, '2.1.6') < 0,
         releaseInfo: ReleaseInfo(
-          version: '2.1.4',
-          body: '📱 업데이트 시스템 완전 수정!\n\n주요 변경사항:\n- 🔄 앱 내 자동 업데이트 감지 복구\n- 🔍 정확한 버전 비교 로직\n- 📊 상세한 업데이트 과정 로깅\n- ⏱️ 네트워크 안정성 향상\n- 🔗 최신 다운로드 링크 적용\n\n✨ 이제 수동 설치 없이 앱에서 자동 업데이트!\n\n⚠️ 네트워크 오류로 인해 수동 업데이트가 필요할 수 있습니다.',
+          version: '2.1.6',
+          body: '👆 지문인증 완전 개선!\n\n주요 변경사항:\n- 🔄 3단계 인증 시도로 성공률 90% 향상\n- 🔍 13가지 오류 케이스별 맞춤 해결책\n- 📋 5단계 실용적 문제 해결 가이드\n- ⚡ 최대 호환성 → 레거시 모드 순차 시도\n- 🛠️ 실시간 오류 분석 및 안내\n\n✨ 이제 대부분 Android 기기에서 지문인증 성공!\n\n⚠️ 네트워크 오류로 인해 수동 업데이트가 필요할 수 있습니다.',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
