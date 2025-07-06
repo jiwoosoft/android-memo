@@ -9,8 +9,8 @@ class UpdateService {
   static const String _repo = 'android-memo';
   static const String _apiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases/latest';
   
-  // 최신 APK 다운로드 URL (v2.1.2)
-  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1CIcBoNOQn_rL9DtpXxkeIjpvd8oM2rEL/view?usp=drivesdk';
+  // 최신 APK 다운로드 URL (v2.1.4)
+  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1Ah6OB3384YUX2fK2TMPmOd1FS0mo9iiF/view?usp=drivesdk';
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
@@ -86,11 +86,11 @@ class UpdateService {
       // API 호출 실패 시 최신 버전으로 강제 업데이트 안내
       return UpdateCheckResult(
         currentVersion: currentVersion,
-        latestVersion: '2.1.2',  // 현재 최신 버전
-        hasUpdate: _compareVersions(currentVersion, '2.1.2') < 0,
+        latestVersion: '2.1.4',  // 현재 최신 버전
+        hasUpdate: _compareVersions(currentVersion, '2.1.4') < 0,
         releaseInfo: ReleaseInfo(
-          version: '2.1.2',
-          body: '🔐 지문인증 시스템 완전 개선!\n\n주요 변경사항:\n- 👆 지문인증 실패 문제 완전 해결\n- 🔧 인증 옵션 최적화 (호환성 향상)\n- 📊 상세한 오류 진단 (13가지 케이스)\n- 💬 구체적인 해결 방법 안내\n- 🎯 더 많은 Android 기기 지원\n\n✨ 이제 지문인증이 안정적으로 작동합니다!',
+          version: '2.1.4',
+          body: '📱 업데이트 시스템 완전 수정!\n\n주요 변경사항:\n- 🔄 앱 내 자동 업데이트 감지 복구\n- 🔍 정확한 버전 비교 로직\n- 📊 상세한 업데이트 과정 로깅\n- ⏱️ 네트워크 안정성 향상\n- 🔗 최신 다운로드 링크 적용\n\n✨ 이제 수동 설치 없이 앱에서 자동 업데이트!',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
@@ -101,11 +101,11 @@ class UpdateService {
       // 오류 발생 시에도 최신 버전 정보 제공
       return UpdateCheckResult(
         currentVersion: packageInfo.version,
-        latestVersion: '2.1.2',  // 현재 최신 버전
-        hasUpdate: _compareVersions(packageInfo.version, '2.1.2') < 0,
+        latestVersion: '2.1.4',  // 현재 최신 버전
+        hasUpdate: _compareVersions(packageInfo.version, '2.1.4') < 0,
         releaseInfo: ReleaseInfo(
-          version: '2.1.2',
-          body: '🔐 지문인증 시스템 완전 개선!\n\n주요 변경사항:\n- 👆 지문인증 실패 문제 완전 해결\n- 🔧 인증 옵션 최적화 (호환성 향상)\n- 📊 상세한 오류 진단 (13가지 케이스)\n- 💬 구체적인 해결 방법 안내\n- 🎯 더 많은 Android 기기 지원\n\n✨ 이제 지문인증이 안정적으로 작동합니다!\n\n⚠️ 네트워크 오류로 인해 수동 업데이트가 필요할 수 있습니다.',
+          version: '2.1.4',
+          body: '📱 업데이트 시스템 완전 수정!\n\n주요 변경사항:\n- 🔄 앱 내 자동 업데이트 감지 복구\n- 🔍 정확한 버전 비교 로직\n- 📊 상세한 업데이트 과정 로깅\n- ⏱️ 네트워크 안정성 향상\n- 🔗 최신 다운로드 링크 적용\n\n✨ 이제 수동 설치 없이 앱에서 자동 업데이트!\n\n⚠️ 네트워크 오류로 인해 수동 업데이트가 필요할 수 있습니다.',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
