@@ -9,8 +9,8 @@ class UpdateService {
   static const String _repo = 'android-memo';
   static const String _apiUrl = 'https://api.github.com/repos/$_owner/$_repo/releases/latest';
   
-  // 기본 다운로드 URL (최신 APK가 있는 Google Drive 링크)
-  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1WYdkZUdzFrglY3-SdwI3TLdFiNr5XQNb/view?usp=drivesdk';
+  // 최신 APK 다운로드 URL (v2.1.2)
+  static const String _defaultDownloadUrl = 'https://drive.google.com/file/d/1CIcBoNOQn_rL9DtpXxkeIjpvd8oM2rEL/view?usp=drivesdk';
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
@@ -18,28 +18,28 @@ class UpdateService {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
 
-      print('현재 버전: $currentVersion');
-      print('GitHub API 호출 중...');
+      print('🔍 [UPDATE] 현재 버전: $currentVersion');
+      print('🌐 [UPDATE] GitHub API 호출 중...');
 
       // GitHub API 호출
       final response = await http.get(
         Uri.parse(_apiUrl),
         headers: {
           'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'SecureMemoApp/1.0',
+          'User-Agent': 'SecureMemoApp/2.1',
         },
-      ).timeout(Duration(seconds: 10));
+      ).timeout(Duration(seconds: 15));
 
-      print('GitHub API 응답: ${response.statusCode}');
+      print('📡 [UPDATE] GitHub API 응답: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         String latestVersion = data['tag_name'].toString().replaceAll('v', '');
         
-        print('최신 버전: $latestVersion');
+        print('🆕 [UPDATE] GitHub 최신 버전: $latestVersion');
         
         // 다운로드 URL 찾기 (GitHub 릴리즈 또는 Google Drive)
-        String downloadUrl = _defaultDownloadUrl;  // 기본값 설정
+        String downloadUrl = _defaultDownloadUrl;  // 기본값: v2.1.2
         
         // 1. GitHub 릴리즈 에셋에서 APK 찾기
         if (data['assets'] != null && data['assets'] is List) {
@@ -47,6 +47,7 @@ class UpdateService {
           for (var asset in assets) {
             if (asset['name'].toString().endsWith('.apk')) {
               downloadUrl = asset['browser_download_url'];
+              print('📦 [UPDATE] GitHub APK 발견: ${asset['name']}');
               break;
             }
           }
@@ -57,33 +58,15 @@ class UpdateService {
         final driveUrlMatch = RegExp(r'https://drive\.google\.com/file/d/[a-zA-Z0-9_-]+/[^\s\)]+').firstMatch(body);
         if (driveUrlMatch != null) {
           downloadUrl = driveUrlMatch.group(0)!;
+          print('🔗 [UPDATE] Google Drive 링크 발견');
         }
 
-        // 강제 업데이트 체크: 현재 버전이 2.0.3보다 낮으면 무조건 업데이트 필요
-        const String minimumVersion = '2.0.3';
+        // 버전 비교
         bool hasUpdate = _compareVersions(currentVersion, latestVersion) < 0;
         
-        // 현재 버전이 2.0.2보다 낮으면 강제 업데이트
-        if (_compareVersions(currentVersion, minimumVersion) < 0) {
-          hasUpdate = true;
-          latestVersion = minimumVersion;
-          downloadUrl = _defaultDownloadUrl;
-          
-          print('강제 업데이트 필요: $currentVersion < $minimumVersion');
-          return UpdateCheckResult(
-            currentVersion: currentVersion,
-            latestVersion: minimumVersion,
-            hasUpdate: true,
-            releaseInfo: ReleaseInfo(
-              version: minimumVersion,
-              body: '🔐 MAJOR 업데이트 - 지문인증 시스템 추가!\n\n주요 변경사항:\n- 🔒 지문인증 시스템 추가 (PIN + 생체인증)\n- ⚙️ 인증 방법 설정 (PIN ↔ 지문인증 전환)\n- 🔄 자동 생체인증 (앱 시작 시)\n- 🛡️ 보안 강화 (Flutter Secure Storage)\n- 🎨 새로운 인증 UI\n\n⚠️ Major 업데이트로 새로설치 권장',
-              downloadUrl: _defaultDownloadUrl,
-            ),
-          );
-        }
-        
-        print('업데이트 필요: $hasUpdate');
-        print('다운로드 URL: $downloadUrl');
+        print('📊 [UPDATE] 버전 비교: $currentVersion vs $latestVersion');
+        print('🔄 [UPDATE] 업데이트 필요: $hasUpdate');
+        print('🔗 [UPDATE] 다운로드 URL: $downloadUrl');
         
         return UpdateCheckResult(
           currentVersion: currentVersion,
@@ -97,48 +80,69 @@ class UpdateService {
         );
       }
       
-      print('GitHub API 오류: ${response.statusCode}');
-      print('응답 내용: ${response.body}');
-      // API 호출 실패 시 기본 다운로드 URL 사용
+      print('❌ [UPDATE] GitHub API 오류: ${response.statusCode}');
+      print('📄 [UPDATE] 응답 내용: ${response.body}');
+      
+      // API 호출 실패 시 최신 버전으로 강제 업데이트 안내
       return UpdateCheckResult(
         currentVersion: currentVersion,
-        latestVersion: '2.0.3',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 완전 수정)
-        hasUpdate: true,  // 강제 업데이트 표시
+        latestVersion: '2.1.2',  // 현재 최신 버전
+        hasUpdate: _compareVersions(currentVersion, '2.1.2') < 0,
         releaseInfo: ReleaseInfo(
-          version: '2.0.3',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 완전 수정)
-          body: '🔐 MAJOR 업데이트 - 지문인증 시스템 추가!\n\n주요 변경사항:\n- 🔒 지문인증 시스템 추가 (PIN + 생체인증)\n- ⚙️ 인증 방법 설정 (PIN ↔ 지문인증 전환)\n- 🔄 자동 생체인증 (앱 시작 시)\n- 🛡️ 보안 강화 (Flutter Secure Storage)\n- 🎨 새로운 인증 UI\n\n⚠️ Major 업데이트로 새로설치 권장',
+          version: '2.1.2',
+          body: '🔐 지문인증 시스템 완전 개선!\n\n주요 변경사항:\n- 👆 지문인증 실패 문제 완전 해결\n- 🔧 인증 옵션 최적화 (호환성 향상)\n- 📊 상세한 오류 진단 (13가지 케이스)\n- 💬 구체적인 해결 방법 안내\n- 🎯 더 많은 Android 기기 지원\n\n✨ 이제 지문인증이 안정적으로 작동합니다!',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
     } catch (e) {
-      print('업데이트 확인 오류: $e');
+      print('❌ [UPDATE] 업데이트 확인 오류: $e');
       final packageInfo = await PackageInfo.fromPlatform();
+      
+      // 오류 발생 시에도 최신 버전 정보 제공
       return UpdateCheckResult(
         currentVersion: packageInfo.version,
-        latestVersion: '2.0.3',  // v2.0+ 지문인증 시스템 업데이트 (업데이트 서비스 완전 수정)
-        hasUpdate: true,  // 강제 업데이트 표시
+        latestVersion: '2.1.2',  // 현재 최신 버전
+        hasUpdate: _compareVersions(packageInfo.version, '2.1.2') < 0,
         releaseInfo: ReleaseInfo(
-          version: '2.0.3',
-          body: '🔐 MAJOR 업데이트 - 지문인증 시스템 추가!\n\n주요 변경사항:\n- 🔒 지문인증 시스템 추가 (PIN + 생체인증)\n- ⚙️ 인증 방법 설정 (PIN ↔ 지문인증 전환)\n- 🔄 자동 생체인증 (앱 시작 시)\n- 🛡️ 보안 강화 (Flutter Secure Storage)\n- 🎨 새로운 인증 UI\n\n⚠️ Major 업데이트로 새로설치 권장',
+          version: '2.1.2',
+          body: '🔐 지문인증 시스템 완전 개선!\n\n주요 변경사항:\n- 👆 지문인증 실패 문제 완전 해결\n- 🔧 인증 옵션 최적화 (호환성 향상)\n- 📊 상세한 오류 진단 (13가지 케이스)\n- 💬 구체적인 해결 방법 안내\n- 🎯 더 많은 Android 기기 지원\n\n✨ 이제 지문인증이 안정적으로 작동합니다!\n\n⚠️ 네트워크 오류로 인해 수동 업데이트가 필요할 수 있습니다.',
           downloadUrl: _defaultDownloadUrl,
         ),
       );
     }
   }
 
-  // 버전 비교 함수
+  // 버전 비교 함수 (개선된 버전)
   static int _compareVersions(String v1, String v2) {
+    print('🔍 [VERSION] 버전 비교: "$v1" vs "$v2"');
+    
+    // 버전 문자열 정규화 (v 접두사 제거)
+    v1 = v1.replaceAll('v', '');
+    v2 = v2.replaceAll('v', '');
+    
     final v1Parts = v1.split('.');
     final v2Parts = v2.split('.');
     
-    for (var i = 0; i < 3; i++) {
-      final v1Part = int.tryParse(v1Parts[i]) ?? 0;
-      final v2Part = int.tryParse(v2Parts[i]) ?? 0;
+    // 최대 3개 부분까지 비교 (major.minor.patch)
+    final maxLength = 3;
+    
+    for (var i = 0; i < maxLength; i++) {
+      final v1Part = i < v1Parts.length ? (int.tryParse(v1Parts[i]) ?? 0) : 0;
+      final v2Part = i < v2Parts.length ? (int.tryParse(v2Parts[i]) ?? 0) : 0;
       
-      if (v1Part < v2Part) return -1;
-      if (v1Part > v2Part) return 1;
+      print('🔢 [VERSION] 부분 $i: $v1Part vs $v2Part');
+      
+      if (v1Part < v2Part) {
+        print('📉 [VERSION] $v1 < $v2');
+        return -1;
+      }
+      if (v1Part > v2Part) {
+        print('📈 [VERSION] $v1 > $v2');
+        return 1;
+      }
     }
     
+    print('⚖️ [VERSION] $v1 == $v2');
     return 0;
   }
 }
