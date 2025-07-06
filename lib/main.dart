@@ -1048,7 +1048,7 @@ class _MemoListScreenState extends State<MemoListScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Text('안전한 메모장'),
+            Text('안전한 메모장 - Secure Memo'),
             if (_selectedTag != null) ...[
               SizedBox(width: 8),
               Chip(
