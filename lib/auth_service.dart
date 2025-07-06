@@ -204,26 +204,73 @@ class AuthService {
 
       print('👆 [BIOMETRIC] 인증 대화상자 실행 중...');
       
-      // 더 호환성 있는 인증 옵션 사용
-      final bool didAuthenticate = await _localAuth.authenticate(
-        localizedReason: '앱에 접근하려면 생체인증을 완료해주세요.',
-        options: const AuthenticationOptions(
-          biometricOnly: false,      // PIN 폴백 허용으로 호환성 향상
-          stickyAuth: false,         // 더 유연한 인증
-          useErrorDialogs: true,     // 시스템 오류 다이얼로그 표시
-          sensitiveTransaction: true, // 민감한 거래로 표시
-        ),
-      );
+      // 1차 시도: 가장 호환성 높은 설정
+      try {
+        print('🔄 [BIOMETRIC] 1차 시도: 최대 호환성 모드');
+        final bool didAuthenticate = await _localAuth.authenticate(
+          localizedReason: '지문을 센서에 대주세요',
+          options: const AuthenticationOptions(
+            biometricOnly: false,        // PIN 폴백 허용
+            stickyAuth: false,           // 유연한 인증
+            useErrorDialogs: false,      // 커스텀 오류 처리
+            sensitiveTransaction: false, // 일반 거래로 설정
+          ),
+        );
 
-      print('✅ [BIOMETRIC] 생체인증 결과: ${didAuthenticate ? '성공' : '실패'}');
-      
-      if (didAuthenticate) {
-        print('🎉 [BIOMETRIC] 생체인증 성공!');
-      } else {
-        print('❌ [BIOMETRIC] 생체인증 실패 - 사용자가 취소했거나 인증에 실패했습니다.');
+        if (didAuthenticate) {
+          print('✅ [BIOMETRIC] 1차 시도 성공!');
+          return true;
+        }
+        print('⚠️ [BIOMETRIC] 1차 시도 실패, 2차 시도 진행');
+      } catch (e) {
+        print('⚠️ [BIOMETRIC] 1차 시도 예외: $e');
       }
+
+      // 2차 시도: 더 단순한 설정
+      try {
+        print('🔄 [BIOMETRIC] 2차 시도: 단순 모드');
+        await Future.delayed(Duration(milliseconds: 500)); // 잠시 대기
+        
+        final bool didAuthenticate = await _localAuth.authenticate(
+          localizedReason: '생체인증을 완료해주세요',
+          options: const AuthenticationOptions(
+            biometricOnly: false,
+            stickyAuth: false,
+            useErrorDialogs: true,
+            sensitiveTransaction: true,
+          ),
+        );
+
+        if (didAuthenticate) {
+          print('✅ [BIOMETRIC] 2차 시도 성공!');
+          return true;
+        }
+        print('⚠️ [BIOMETRIC] 2차 시도 실패, 3차 시도 진행');
+      } catch (e) {
+        print('⚠️ [BIOMETRIC] 2차 시도 예외: $e');
+      }
+
+      // 3차 시도: 레거시 호환 모드
+      try {
+        print('🔄 [BIOMETRIC] 3차 시도: 레거시 호환 모드');
+        await Future.delayed(Duration(milliseconds: 500)); // 잠시 대기
+        
+        final bool didAuthenticate = await _localAuth.authenticate(
+          localizedReason: '지문 인증',
+        );
+
+        if (didAuthenticate) {
+          print('✅ [BIOMETRIC] 3차 시도 성공!');
+          return true;
+        }
+        print('❌ [BIOMETRIC] 모든 시도 실패');
+      } catch (e) {
+        print('❌ [BIOMETRIC] 3차 시도 예외: $e');
+      }
+
+      print('❌ [BIOMETRIC] 모든 인증 시도 실패');
+      return false;
       
-      return didAuthenticate;
     } on PlatformException catch (e) {
       print('❌ [BIOMETRIC] PlatformException 발생: ${e.code} - ${e.message}');
       
@@ -236,10 +283,10 @@ class AuthService {
           print('❌ [BIOMETRIC] 등록된 생체인증이 없습니다.');
           break;
         case 'LockedOut':
-          print('❌ [BIOMETRIC] 생체인증이 일시적으로 잠겼습니다.');
+          print('❌ [BIOMETRIC] 생체인증이 일시적으로 잠겼습니다. (5분 후 재시도)');
           break;
         case 'PermanentlyLockedOut':
-          print('❌ [BIOMETRIC] 생체인증이 영구적으로 잠겼습니다.');
+          print('❌ [BIOMETRIC] 생체인증이 영구적으로 잠겼습니다. (기기 재시작 필요)');
           break;
         case 'BiometricOnlyNotSupported':
           print('❌ [BIOMETRIC] 생체인증 전용 모드가 지원되지 않습니다.');
@@ -258,6 +305,15 @@ class AuthService {
           break;
         case 'BiometricNotRecognized':
           print('❌ [BIOMETRIC] 생체인증을 인식할 수 없습니다.');
+          break;
+        case 'PasscodeNotSet':
+          print('❌ [BIOMETRIC] 기기에 잠금 화면이 설정되지 않았습니다.');
+          break;
+        case 'BiometricNotAvailable':
+          print('❌ [BIOMETRIC] 생체인증 하드웨어를 사용할 수 없습니다.');
+          break;
+        case 'OtherOperatingSystem':
+          print('❌ [BIOMETRIC] 지원되지 않는 운영체제입니다.');
           break;
         default:
           print('❌ [BIOMETRIC] 알 수 없는 오류: ${e.code} - ${e.message}');

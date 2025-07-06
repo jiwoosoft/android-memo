@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:local_auth/local_auth.dart';
 import 'auth_service.dart';
 import 'main.dart';
+import 'package:flutter/services.dart'; // Added for PlatformException
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -105,8 +106,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// 지문인증으로 로그인
   Future<void> _loginWithBiometric() async {
-    if (_isLoading) return;
-
     setState(() {
       _isLoading = true;
     });
@@ -152,6 +151,52 @@ class _LoginScreenState extends State<LoginScreen> {
         print('👆 [LOGIN] ❌ 지문인증 실패');
         _showDetailedBiometricError();
       }
+    } on PlatformException catch (e) {
+      print('❌ [LOGIN] PlatformException: ${e.code} - ${e.message}');
+      
+      // 구체적인 오류 코드별 사용자 안내
+      String errorMessage = '🚨 지문인증 오류\n\n';
+      String solution = '';
+      
+      switch (e.code) {
+        case 'NotAvailable':
+          errorMessage += '생체인증을 사용할 수 없습니다.';
+          solution = '• 기기 설정에서 잠금 화면 설정\n• 생체인증 기능 활성화\n• 기기 재시작 후 재시도';
+          break;
+        case 'NotEnrolled':
+          errorMessage += '등록된 지문이 없습니다.';
+          solution = '• 설정 → 보안 → 지문인식\n• 새 지문 등록 후 재시도\n• 여러 손가락 등록 권장';
+          break;
+        case 'LockedOut':
+          errorMessage += '지문인증이 일시적으로 잠겼습니다.';
+          solution = '• 5분 후 다시 시도\n• PIN으로 로그인 사용\n• 기기 잠금 해제 후 재시도';
+          break;
+        case 'PermanentlyLockedOut':
+          errorMessage += '지문인증이 영구적으로 잠겼습니다.';
+          solution = '• 기기 재시작 필요\n• PIN으로 로그인 사용\n• 지문 재등록 고려';
+          break;
+        case 'UserCancel':
+          errorMessage += '지문인증을 취소했습니다.';
+          solution = '• 다시 시도해보세요\n• PIN으로 로그인 가능';
+          break;
+        case 'BiometricNotRecognized':
+          errorMessage += '지문을 인식할 수 없습니다.';
+          solution = '• 지문 센서 청소\n• 손가락 청소 후 재시도\n• 다른 등록된 손가락 사용\n• 천천히 센서에 대기';
+          break;
+        case 'PasscodeNotSet':
+          errorMessage += '기기에 잠금 화면이 설정되지 않았습니다.';
+          solution = '• 설정 → 보안 → 화면 잠금\n• PIN, 패턴, 비밀번호 설정\n• 설정 후 지문 등록';
+          break;
+        case 'BiometricNotAvailable':
+          errorMessage += '생체인증 하드웨어를 사용할 수 없습니다.';
+          solution = '• 기기 재시작\n• 시스템 업데이트 확인\n• PIN 로그인 사용';
+          break;
+        default:
+          errorMessage += '예상치 못한 오류가 발생했습니다.';
+          solution = '• 앱 재시작\n• 기기 재시작\n• PIN으로 로그인\n• 오류 코드: ${e.code}';
+      }
+      
+      _showErrorMessage('$errorMessage\n\n해결 방법:\n$solution');
     } catch (e) {
       print('❌ [LOGIN] 지문인증 오류: $e');
       _showErrorMessage('🚨 지문인증 오류\n\n지문인증 중 예상치 못한 오류가 발생했습니다.\n\n오류 정보: $e\n\n해결 방법:\n• 앱을 다시 시작해보세요\n• 기기를 재시작해보세요\n• PIN으로 로그인하세요\n• 문제가 지속되면 지문을 다시 등록해보세요');
@@ -168,19 +213,27 @@ class _LoginScreenState extends State<LoginScreen> {
     _showErrorMessage(
       '👆 지문인증 실패\n\n'
       '지문인증에 실패했습니다.\n\n'
-      '가능한 원인:\n'
-      '• 등록된 지문과 일치하지 않음\n'
-      '• 지문 센서가 더러워짐\n'
-      '• 손가락이 젖어있거나 건조함\n'
-      '• 너무 빠르게 터치했음\n\n'
-      '해결 방법:\n'
-      '• 지문 센서를 깨끗이 닦아주세요\n'
-      '• 손가락을 깨끗이 닦아주세요\n'
-      '• 천천히 지문을 센서에 대주세요\n'
-      '• 등록된 다른 지문을 사용해보세요\n'
-      '• PIN으로 로그인하세요\n\n'
-      '문제가 지속되면 기기 설정에서\n'
-      '지문을 다시 등록해보세요.'
+      '📋 단계별 해결 방법:\n\n'
+      '1️⃣ 지문 센서 청소\n'
+      '   • 부드러운 천으로 센서를 깨끗이 닦기\n'
+      '   • 알코올 솜으로 센서 소독\n\n'
+      '2️⃣ 손가락 상태 확인\n'
+      '   • 손가락을 깨끗이 닦기\n'
+      '   • 크림이나 물기 완전히 제거\n'
+      '   • 상처나 밴드 없는 손가락 사용\n\n'
+      '3️⃣ 인증 방법 개선\n'
+      '   • 센서에 천천히 지문 대기 (2-3초)\n'
+      '   • 너무 세게 누르지 말기\n'
+      '   • 등록된 다른 손가락으로 시도\n\n'
+      '4️⃣ 기기 설정 확인\n'
+      '   • 설정 → 보안 → 지문 → 새 지문 추가\n'
+      '   • 같은 손가락을 여러 각도로 등록\n'
+      '   • 기기 재시작 후 재시도\n\n'
+      '5️⃣ 임시 해결책\n'
+      '   • PIN으로 로그인 후 지문 재설정\n'
+      '   • 앱 재시작 후 다시 시도\n\n'
+      '⚠️ 문제가 계속되면 기기의 지문인식\n'
+      '기능 자체에 문제가 있을 수 있습니다.'
     );
   }
 
