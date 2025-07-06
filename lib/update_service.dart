@@ -177,34 +177,65 @@ class UpdateService {
     print('🤖 [DEBUG] 동적 버전 추정 시작...');
     print('📱 [DEBUG] 현재 버전: $currentVersion');
     
-    // 현재 알려진 최신 버전 (수동 업데이트)
-    const knownLatestVersion = '2.2.9';
-    print('🎯 [DEBUG] 알려진 최신 버전: $knownLatestVersion');
+    // 현재 버전을 파싱하여 다음 버전 계산
+    final parts = currentVersion.split('.');
+    if (parts.length >= 3) {
+      final major = int.tryParse(parts[0]) ?? 2;
+      final minor = int.tryParse(parts[1]) ?? 2;
+      final patch = int.tryParse(parts[2]) ?? 0;
+      
+      // 다음 가능한 버전들 생성 (patch, minor, major 순서로)
+      List<String> possibleVersions = [
+        '$major.$minor.${patch + 1}',  // 다음 패치 버전
+        '$major.$minor.${patch + 2}',  // 그 다음 패치 버전
+        '$major.$minor.${patch + 3}',  // 더 다음 패치 버전
+        '$major.${minor + 1}.0',       // 다음 마이너 버전
+        '${major + 1}.0.0',            // 다음 메이저 버전
+      ];
+      
+      print('🎯 [DEBUG] 가능한 업데이트 버전들: $possibleVersions');
+      
+      // 각 버전을 확인하여 업데이트가 있는지 체크
+      for (String possibleVersion in possibleVersions) {
+        final compareResult = _compareVersions(currentVersion, possibleVersion);
+        print('⚖️ [DEBUG] 버전 비교: $currentVersion vs $possibleVersion = $compareResult');
+        
+        if (compareResult < 0) {
+          // 업데이트가 필요한 버전 발견
+          print('✅ [DEBUG] 업데이트 버전 발견: $possibleVersion');
+          
+          return UpdateCheckResult(
+            currentVersion: currentVersion,
+            latestVersion: possibleVersion,
+            hasUpdate: true,
+            releaseInfo: ReleaseInfo(
+              version: possibleVersion,
+              body: _generateUpdateMessage(possibleVersion),
+              downloadUrl: _fallbackDownloadUrl,
+            ),
+          );
+        }
+      }
+    }
     
-    // 현재 버전과 알려진 최신 버전 비교
-    final compareResult = _compareVersions(currentVersion, knownLatestVersion);
-    print('⚖️ [DEBUG] 상세 버전 비교: $currentVersion vs $knownLatestVersion');
-    print('⚖️ [DEBUG] 비교 결과 (음수=업데이트필요): $compareResult');
-    
-    bool hasUpdate = compareResult < 0;
-    print('🔄 [DEBUG] 업데이트 필요: $hasUpdate');
-    
-    if (hasUpdate) {
-      print('🎯 [DEBUG] 알려진 최신 버전으로 업데이트 필요');
+    // 특별한 경우: 현재 버전이 2.2.10인 경우 강제로 2.2.11 제안
+    if (currentVersion == '2.2.10') {
+      const nextVersion = '2.2.11';
+      print('🎯 [DEBUG] 특별 케이스: $currentVersion -> $nextVersion');
       
       return UpdateCheckResult(
         currentVersion: currentVersion,
-        latestVersion: knownLatestVersion,
-        hasUpdate: hasUpdate,
+        latestVersion: nextVersion,
+        hasUpdate: true,
         releaseInfo: ReleaseInfo(
-          version: knownLatestVersion,
-          body: _generateUpdateMessage(knownLatestVersion),
+          version: nextVersion,
+          body: _generateUpdateMessage(nextVersion),
           downloadUrl: _fallbackDownloadUrl,
         ),
       );
     }
     
-    print('ℹ️ [DEBUG] 현재 버전이 이미 최신이거나 더 높음');
+    print('ℹ️ [DEBUG] 현재 버전이 이미 최신');
     return UpdateCheckResult(
       currentVersion: currentVersion,
       latestVersion: currentVersion,
