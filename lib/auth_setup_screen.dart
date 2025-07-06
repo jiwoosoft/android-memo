@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'auth_service.dart';
+import 'main.dart'; // DataService를 위해 추가
 
 /// PIN 전용 인증 설정 화면
 /// 지문인증 기능을 제거하고 PIN 설정만 지원합니다.
@@ -83,6 +84,9 @@ class _AuthSetupScreenState extends State<AuthSetupScreen> {
       
       // 인증 방법을 PIN으로 설정
       await AuthService.setAuthMethod(AuthMethod.pin);
+      
+      // 첫 실행 완료 표시 (중요: 다음 실행 시 로그인 화면으로 이동)
+      await DataService.setNotFirstLaunch();
 
       print('✅ [SETUP] PIN 설정 완료');
 

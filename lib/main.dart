@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:pinput/pinput.dart';
 import 'package:expandable/expandable.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'security_service.dart';
+import 'auth_service.dart';
 import 'update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
@@ -216,10 +216,8 @@ class DataService {
       return _getDefaultCategories();
     }
     
-    // 보안 강화: 디버깅 모드 감지
-    if (SecurityService.isDebuggingMode()) {
-      print('⚠️ 디버깅 모드에서 실행 중입니다.');
-    }
+    // 보안 강화: 디버깅 모드 감지 (간소화)
+    // 디버깅 모드 체크 생략
     
     try {
       // 저장된 PIN 해시 가져오기
@@ -230,16 +228,16 @@ class DataService {
       
       // 현재 세션에서 PIN을 가져올 수 없으므로 기본 복호화 시도
       // 실제로는 PIN 입력 후 세션에 저장된 PIN 사용
-      final currentPin = await _getCurrentSessionPin();
+      final currentPin = await getCurrentSessionPin();
       if (currentPin == null) {
         return _getDefaultCategories();
       }
       
-      // 데이터 복호화
-      final decryptedJson = SecurityService.decryptMemoData(encryptedData, currentPin);
+      // 데이터 복호화 (간소화)
+      final decryptedJson = _simpleDecrypt(encryptedData, currentPin);
       
       // 복호화 실패 시 기본 데이터 반환
-      if (decryptedJson.isEmpty || !SecurityService.verifyDataIntegrity(decryptedJson)) {
+      if (decryptedJson.isEmpty) {
         return _getDefaultCategories();
       }
       
@@ -256,7 +254,7 @@ class DataService {
     
     try {
       // 현재 세션의 PIN 가져오기
-      final currentPin = await _getCurrentSessionPin();
+      final currentPin = await getCurrentSessionPin();
       if (currentPin == null) {
         print('⚠️ 세션 PIN이 없어서 저장할 수 없습니다.');
         return false;
@@ -265,8 +263,8 @@ class DataService {
       // JSON 데이터 생성
       final categoriesJson = jsonEncode(categories.map((c) => c.toJson()).toList());
       
-      // 데이터 암호화
-      final encryptedData = SecurityService.encryptMemoData(categoriesJson, currentPin);
+      // 데이터 암호화 (간소화)
+      final encryptedData = _simpleEncrypt(categoriesJson, currentPin);
       
       // 암호화된 데이터 저장
       await prefs.setString(_categoriesKey, encryptedData);
@@ -281,13 +279,49 @@ class DataService {
   
   // 현재 세션의 PIN을 관리하는 부분 (보안상 메모리에 임시 저장)
   static String? _sessionPin;
+  static const String _sessionPinKey = 'session_pin_temp';
   
-  static Future<String?> _getCurrentSessionPin() async {
-    return _sessionPin;
+  static Future<String?> getCurrentSessionPin() async {
+    print('🔍 [DATA] getCurrentSessionPin 호출: 메모리=${_sessionPin != null ? '존재함' : 'null'}');
+    
+    // 메모리에서 먼저 확인
+    if (_sessionPin != null) {
+      print('🔍 [DATA] 메모리에서 세션 PIN 반환');
+      return _sessionPin;
+    }
+    
+    // 메모리에 없으면 SharedPreferences에서 확인 (백업용)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final tempSessionPin = prefs.getString(_sessionPinKey);
+      print('🔍 [DATA] SharedPreferences에서 확인: ${tempSessionPin != null ? '존재함' : 'null'}');
+      
+      if (tempSessionPin != null) {
+        _sessionPin = tempSessionPin; // 메모리에 복원
+        print('🔍 [DATA] 세션 PIN 메모리에 복원됨');
+        return tempSessionPin;
+      }
+    } catch (e) {
+      print('❌ [DATA] 세션 PIN 확인 중 오류: $e');
+    }
+    
+    print('🔍 [DATA] 세션 PIN 없음');
+    return null;
   }
   
-  static void setSessionPin(String pin) {
+  static void setSessionPin(String pin) async {
+    print('🔐 [DATA] setSessionPin 호출: 길이=${pin.length}');
     _sessionPin = pin;
+    
+    // 백업용으로 SharedPreferences에도 저장 (임시)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_sessionPinKey, pin);
+      print('🔐 [DATA] 세션 PIN 메모리 및 SharedPreferences에 저장 완료');
+    } catch (e) {
+      print('❌ [DATA] 세션 PIN SharedPreferences 저장 실패: $e');
+      print('🔐 [DATA] 메모리에만 저장 완료');
+    }
   }
   
   // 정렬 설정 저장 및 로드
@@ -334,8 +368,56 @@ class DataService {
     return FontSize.values.firstWhere((e) => e.name == fontSizeName, orElse: () => FontSize.medium);
   }
   
-  static void clearSessionPin() {
+  static void clearSessionPin() async {
+    print('🧹 [DATA] 세션 PIN 정리 시작');
     _sessionPin = null;
+    
+    // SharedPreferences에서도 제거
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_sessionPinKey);
+      print('🧹 [DATA] 세션 PIN 메모리 및 SharedPreferences에서 정리 완료');
+    } catch (e) {
+      print('❌ [DATA] 세션 PIN SharedPreferences 정리 실패: $e');
+      print('🧹 [DATA] 메모리에서만 정리 완료');
+    }
+  }
+
+  // 간단한 암호화/복호화 메소드 (보안 강화를 위해 추후 개선 필요)
+  static String _simpleEncrypt(String data, String pin) {
+    try {
+      // 간단한 XOR 암호화 (기본적인 보안)
+      final bytes = utf8.encode(data);
+      final pinBytes = utf8.encode(pin);
+      final encrypted = <int>[];
+      
+      for (int i = 0; i < bytes.length; i++) {
+        encrypted.add(bytes[i] ^ pinBytes[i % pinBytes.length]);
+      }
+      
+      return base64.encode(encrypted);
+    } catch (e) {
+      print('암호화 오류: $e');
+      return '';
+    }
+  }
+
+  static String _simpleDecrypt(String encryptedData, String pin) {
+    try {
+      // 간단한 XOR 복호화
+      final encrypted = base64.decode(encryptedData);
+      final pinBytes = utf8.encode(pin);
+      final decrypted = <int>[];
+      
+      for (int i = 0; i < encrypted.length; i++) {
+        decrypted.add(encrypted[i] ^ pinBytes[i % pinBytes.length]);
+      }
+      
+      return utf8.decode(decrypted);
+    } catch (e) {
+      print('복호화 오류: $e');
+      return '';
+    }
   }
 
   /// 모든 앱 데이터 삭제 (초기화용)
@@ -386,7 +468,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
           themeMode: settings.themeMode,
           routes: {
-            '/': (context) => MemoListScreen(),
+            '/main': (context) => MemoListScreen(),
             '/auth-setup': (context) => AuthSetupScreen(),
             '/login': (context) => LoginScreen(),
           },
@@ -573,9 +655,38 @@ class _MemoListScreenState extends State<MemoListScreen> {
   @override
   void initState() {
     super.initState();
-    _loadCategories();
+    _checkSessionAndLoadData();
     _loadSortSettings();
     _searchController.addListener(_onSearchChanged);
+  }
+  
+  // 세션 PIN 확인 후 데이터 로드
+  void _checkSessionAndLoadData() async {
+    print('🔍 [MAIN] 메인 화면 초기화 시작');
+    print('🔍 [MAIN] 세션 PIN 확인 중...');
+    
+    final sessionPin = await DataService.getCurrentSessionPin();
+    
+    print('🔍 [MAIN] 세션 PIN 상태: ${sessionPin != null ? '존재함 (길이: ${sessionPin.length})' : 'null'}');
+    
+    // 세션 PIN이 없으면 로그인 화면으로 리다이렉트
+    if (sessionPin == null) {
+      print('⚠️ [MAIN] 세션 PIN이 없습니다. 로그인 화면으로 이동합니다.');
+      
+      // 약간의 지연을 두고 리다이렉트 (디버깅용)
+      await Future.delayed(Duration(milliseconds: 500));
+      
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+        );
+      }
+      return;
+    }
+    
+    // 세션 PIN이 있으면 카테고리 데이터 로드
+    print('✅ [MAIN] 세션 PIN 확인됨. 데이터를 로드합니다.');
+    _loadCategories();
   }
   
   void _loadSortSettings() async {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'auth_service.dart';
+import 'main.dart'; // DataService를 위해 추가
 
 /// PIN 전용 로그인 화면
 /// 지문인증 기능을 제거하고 PIN 입력만 지원합니다.
@@ -50,17 +51,38 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      print('🔐 [LOGIN] PIN 인증 시도: 길이=${pin.length}');
+      print('🔐 [LOGIN] PIN 인증 시도: 길이=${pin.length}, 내용=${pin.replaceAll(RegExp(r'.'), '*')}');
+      
+      // PIN 설정 여부 확인
+      final isPinSet = await AuthService.isPinSet();
+      print('🔐 [LOGIN] PIN 설정 여부: $isPinSet');
+      
+      if (!isPinSet) {
+        throw Exception('PIN이 설정되지 않았습니다. 설정 화면으로 이동하세요.');
+      }
       
       final success = await AuthService.authenticate(pin: pin);
       
       if (success) {
         print('✅ [LOGIN] PIN 인증 성공');
         
+        // 세션 PIN 설정 (메모 데이터 복호화를 위해 필요)
+        DataService.setSessionPin(pin);
+        print('🔐 [LOGIN] 세션 PIN 설정 완료');
+        
+        // 세션 PIN 설정 확인
+        final verifySessionPin = await DataService.getCurrentSessionPin();
+        print('🔐 [LOGIN] 세션 PIN 확인: ${verifySessionPin != null ? '설정됨' : '설정 실패'}');
+        
         // 성공 피드백
         HapticFeedback.lightImpact();
         
+        // 약간의 지연을 두고 메인 화면으로 이동 (세션 PIN 안정화)
+        print('🔐 [LOGIN] 메인 화면으로 이동 준비 중...');
+        await Future.delayed(Duration(milliseconds: 300));
+        
         // 메인 화면으로 이동
+        print('🔐 [LOGIN] 메인 화면으로 이동');
         Navigator.of(context).pushReplacementNamed('/main');
       } else {
         print('❌ [LOGIN] PIN 인증 실패');
@@ -102,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -117,15 +139,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     Icon(
                       Icons.lock_outline,
                       size: 80,
-                      color: Colors.blue[600],
+                      color: Colors.teal,
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      '보안 메모',
+                      '안전한 메모장',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -133,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       'PIN으로 안전하게 보호되는 메모',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.grey[600],
+                        color: Colors.white70,
                       ),
                     ),
                   ],
@@ -144,11 +166,12 @@ class _LoginScreenState extends State<LoginScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.grey[900],
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[700]!, width: 1),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withOpacity(0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -163,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                        color: Colors.white,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -179,17 +202,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: const TextStyle(
                         fontSize: 18,
                         letterSpacing: 4,
+                        color: Colors.white,
                       ),
                       decoration: InputDecoration(
                         hintText: 'PIN을 입력하세요',
+                        hintStyle: TextStyle(color: Colors.grey[500]),
                         counterText: '',
+                        filled: true,
+                        fillColor: Colors.grey[800],
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: Colors.grey[600]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[600]!),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+                          borderSide: BorderSide(color: Colors.teal, width: 2),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -206,8 +237,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ElevatedButton(
                       onPressed: _isLoading ? null : _loginWithPin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[600],
+                        backgroundColor: Colors.teal,
                         foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.grey[700],
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -238,15 +270,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.red[50],
+                          color: Colors.red[900]?.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red[200]!),
+                          border: Border.all(color: Colors.red[700]!),
                         ),
                         child: Row(
                           children: [
                             Icon(
                               Icons.error_outline,
-                              color: Colors.red[600],
+                              color: Colors.red[400],
                               size: 20,
                             ),
                             const SizedBox(width: 8),
@@ -254,7 +286,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Text(
                                 _errorMessage!,
                                 style: TextStyle(
-                                  color: Colors.red[700],
+                                  color: Colors.red[300],
                                   fontSize: 14,
                                 ),
                               ),
@@ -274,7 +306,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 'PIN을 잊으셨나요?\n앱을 재설치하면 새로운 PIN을 설정할 수 있습니다.',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: Colors.grey[400],
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
