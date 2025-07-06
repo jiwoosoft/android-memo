@@ -19,151 +19,178 @@ class UpdateService {
       'https://drive.google.com/file/d/1bwbEADi-gVRSUjzHEKUZ5sL-ZZHfINsy/view?usp=drivesdk'; // v2.2.9
 
   static Future<UpdateCheckResult> checkForUpdate() async {
+    print('🚀 [DEBUG] ===== 업데이트 확인 시작 =====');
+    
     try {
       // 현재 앱 버전 정보 가져오기
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
+      print('📱 [DEBUG] 현재 앱 버전: $currentVersion');
+      print('📱 [DEBUG] 빌드 번호: ${packageInfo.buildNumber}');
+      print('📱 [DEBUG] 앱 이름: ${packageInfo.appName}');
+      print('📱 [DEBUG] 패키지 이름: ${packageInfo.packageName}');
 
-      print('🔍 [UPDATE] 현재 버전: $currentVersion');
-      print('🌐 [UPDATE] GitHub API 호출 중...');
-
-      // 1차 시도: 최신 릴리즈 API 호출
-      UpdateCheckResult? result = await _tryGetLatestRelease(currentVersion);
+      print('🔄 [DEBUG] 1차 시도: GitHub 최신 릴리즈 API 호출');
+      // 1차 시도: GitHub 최신 릴리즈 API
+      final result1 = await _tryGitHubLatestRelease(currentVersion);
+      print('📊 [DEBUG] 1차 시도 결과: hasUpdate=${result1.hasUpdate}, latestVersion=${result1.latestVersion}');
       
-      if (result != null) {
-        return result;
+      if (result1.hasUpdate) {
+        print('✅ [DEBUG] 1차 시도에서 업데이트 발견! 결과 반환');
+        return result1;
       }
 
-      // 2차 시도: 모든 릴리즈 목록에서 최신 버전 찾기
-      print('🔄 [UPDATE] 백업 API로 재시도...');
-      result = await _tryGetAllReleases(currentVersion);
+      print('🔄 [DEBUG] 2차 시도: GitHub 백업 API 호출');
+      // 2차 시도: GitHub 백업 API
+      final result2 = await _tryGitHubBackupApi(currentVersion);
+      print('📊 [DEBUG] 2차 시도 결과: hasUpdate=${result2.hasUpdate}, latestVersion=${result2.latestVersion}');
       
-      if (result != null) {
-        return result;
+      if (result2.hasUpdate) {
+        print('✅ [DEBUG] 2차 시도에서 업데이트 발견! 결과 반환');
+        return result2;
       }
 
+      print('🔄 [DEBUG] 3차 시도: 동적 버전 추정');
       // 3차 시도: 동적 최신 버전 추정
-      print('⚡ [UPDATE] 동적 버전 추정 시도...');
-      return _estimateLatestVersion(currentVersion);
+      final result3 = _estimateLatestVersion(currentVersion);
+      print('📊 [DEBUG] 3차 시도 결과: hasUpdate=${result3.hasUpdate}, latestVersion=${result3.latestVersion}');
       
-    } catch (e) {
-      print('❌ [UPDATE] 업데이트 확인 오류: $e');
+      print('🏁 [DEBUG] ===== 업데이트 확인 완료 =====');
+      return result3;
+      
+    } catch (e, stackTrace) {
+      print('❌ [DEBUG] 업데이트 확인 중 오류 발생: $e');
+      print('📚 [DEBUG] 스택 트레이스: $stackTrace');
+      
+      // 오류 발생 시 폴백
       final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
       
-      // 최후 수단: 현재 버전 기반 추정
-      return _estimateLatestVersion(packageInfo.version);
+      return UpdateCheckResult(
+        currentVersion: currentVersion,
+        latestVersion: currentVersion,
+        hasUpdate: false,
+        releaseInfo: null,
+      );
     }
   }
 
   /// 1차 시도: GitHub 최신 릴리즈 API
-  static Future<UpdateCheckResult?> _tryGetLatestRelease(String currentVersion) async {
+  static Future<UpdateCheckResult> _tryGitHubLatestRelease(String currentVersion) async {
+    print('🌐 [DEBUG] GitHub API 호출: $_apiUrl');
+    
     try {
       final response = await http.get(
         Uri.parse(_apiUrl),
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'SecureMemoApp/2.2',
-        },
-      ).timeout(Duration(seconds: 20));
+        headers: {'Accept': 'application/vnd.github.v3+json'},
+      ).timeout(const Duration(seconds: 10));
 
-      print('📡 [UPDATE] GitHub API 응답: ${response.statusCode}');
-
+      print('📡 [DEBUG] API 응답 상태: ${response.statusCode}');
+      print('📡 [DEBUG] API 응답 헤더: ${response.headers}');
+      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        String latestVersion = data['tag_name'].toString().replaceAll('v', '');
+        print('📦 [DEBUG] API 응답 데이터: ${json.encode(data)}');
         
-        print('🆕 [UPDATE] GitHub 최신 버전: $latestVersion');
-        
-        // 다운로드 URL 찾기
-        String downloadUrl = await _findDownloadUrl(data);
+        final latestVersion = data['tag_name']?.toString().replaceFirst('v', '') ?? '';
+        final body = data['body']?.toString() ?? '';
+        final downloadUrl = data['assets']?.isNotEmpty == true 
+            ? data['assets'][0]['browser_download_url']?.toString() ?? _fallbackDownloadUrl
+            : _fallbackDownloadUrl;
 
-        // 버전 비교
-        bool hasUpdate = _compareVersions(currentVersion, latestVersion) < 0;
-        
-        print('📊 [UPDATE] 버전 비교: $currentVersion vs $latestVersion');
-        print('🔄 [UPDATE] 업데이트 필요: $hasUpdate');
-        print('🔗 [UPDATE] 다운로드 URL: $downloadUrl');
-        
+        print('🏷️ [DEBUG] 추출된 최신 버전: $latestVersion');
+        print('📝 [DEBUG] 릴리즈 노트: ${body.substring(0, body.length > 100 ? 100 : body.length)}...');
+        print('🔗 [DEBUG] 다운로드 URL: $downloadUrl');
+
+        final hasUpdate = _compareVersions(currentVersion, latestVersion) < 0;
+        print('⚖️ [DEBUG] 버전 비교 결과: $currentVersion vs $latestVersion = hasUpdate: $hasUpdate');
+
         return UpdateCheckResult(
           currentVersion: currentVersion,
           latestVersion: latestVersion,
           hasUpdate: hasUpdate,
           releaseInfo: ReleaseInfo(
             version: latestVersion,
-            body: data['body'] ?? '업데이트 정보가 없습니다.',
+            body: body,
             downloadUrl: downloadUrl,
           ),
         );
+      } else {
+        print('❌ [DEBUG] API 호출 실패: ${response.statusCode} - ${response.body}');
+        throw Exception('GitHub API 호출 실패: ${response.statusCode}');
       }
-      
-      print('❌ [UPDATE] GitHub API 오류: ${response.statusCode}');
-      return null;
-      
     } catch (e) {
-      print('❌ [UPDATE] 1차 시도 실패: $e');
-      return null;
+      print('❌ [DEBUG] 1차 시도 예외 발생: $e');
+      rethrow;
     }
   }
 
-  /// 2차 시도: 모든 릴리즈 목록에서 최신 버전 찾기
-  static Future<UpdateCheckResult?> _tryGetAllReleases(String currentVersion) async {
+  /// 2차 시도: GitHub 백업 API (모든 릴리즈)
+  static Future<UpdateCheckResult> _tryGitHubBackupApi(String currentVersion) async {
+    print('🌐 [DEBUG] GitHub 백업 API 호출: $_backupApiUrl');
+    
     try {
       final response = await http.get(
         Uri.parse(_backupApiUrl),
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'SecureMemoApp/2.2',
-        },
-      ).timeout(Duration(seconds: 25));
+        headers: {'Accept': 'application/vnd.github.v3+json'},
+      ).timeout(const Duration(seconds: 10));
 
+      print('📡 [DEBUG] 백업 API 응답 상태: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
-        final releases = json.decode(response.body) as List;
-        
+        final List<dynamic> releases = json.decode(response.body);
+        print('📦 [DEBUG] 백업 API에서 발견된 릴리즈 수: ${releases.length}');
+
         if (releases.isNotEmpty) {
           // 가장 최신 릴리즈 선택
           final latestRelease = releases.first;
-          String latestVersion = latestRelease['tag_name'].toString().replaceAll('v', '');
+          final latestVersion = latestRelease['tag_name']?.toString().replaceFirst('v', '') ?? '';
+          final body = latestRelease['body']?.toString() ?? '';
           
-          print('🔍 [UPDATE] 백업 API에서 최신 버전 발견: $latestVersion');
+          print('🏷️ [DEBUG] 백업 API 최신 버전: $latestVersion');
           
-          String downloadUrl = await _findDownloadUrl(latestRelease);
-          bool hasUpdate = _compareVersions(currentVersion, latestVersion) < 0;
-          
+          final hasUpdate = _compareVersions(currentVersion, latestVersion) < 0;
+          print('⚖️ [DEBUG] 백업 API 버전 비교: $currentVersion vs $latestVersion = hasUpdate: $hasUpdate');
+
           return UpdateCheckResult(
             currentVersion: currentVersion,
             latestVersion: latestVersion,
             hasUpdate: hasUpdate,
             releaseInfo: ReleaseInfo(
               version: latestVersion,
-              body: latestRelease['body'] ?? '업데이트 정보가 없습니다.',
-              downloadUrl: downloadUrl,
+              body: body,
+              downloadUrl: _fallbackDownloadUrl,
             ),
           );
         }
       }
       
-      print('❌ [UPDATE] 백업 API 실패: ${response.statusCode}');
-      return null;
-      
+      throw Exception('백업 API에서 릴리즈 정보를 찾을 수 없음');
     } catch (e) {
-      print('❌ [UPDATE] 2차 시도 실패: $e');
-      return null;
+      print('❌ [DEBUG] 2차 시도 예외 발생: $e');
+      rethrow;
     }
   }
 
   /// 3차 시도: 동적 최신 버전 추정
   static UpdateCheckResult _estimateLatestVersion(String currentVersion) {
-    print('🤖 [UPDATE] 동적 버전 추정 시작...');
+    print('🤖 [DEBUG] 동적 버전 추정 시작...');
+    print('📱 [DEBUG] 현재 버전: $currentVersion');
     
     // 현재 알려진 최신 버전 (수동 업데이트)
     const knownLatestVersion = '2.2.9';
+    print('🎯 [DEBUG] 알려진 최신 버전: $knownLatestVersion');
     
     // 현재 버전과 알려진 최신 버전 비교
-    bool hasUpdate = _compareVersions(currentVersion, knownLatestVersion) < 0;
+    final compareResult = _compareVersions(currentVersion, knownLatestVersion);
+    print('⚖️ [DEBUG] 상세 버전 비교: $currentVersion vs $knownLatestVersion');
+    print('⚖️ [DEBUG] 비교 결과 (음수=업데이트필요): $compareResult');
+    
+    bool hasUpdate = compareResult < 0;
+    print('🔄 [DEBUG] 업데이트 필요: $hasUpdate');
     
     if (hasUpdate) {
-      print('🎯 [UPDATE] 알려진 최신 버전 감지: $knownLatestVersion');
-      print('🔄 [UPDATE] 업데이트 필요: $hasUpdate');
+      print('🎯 [DEBUG] 알려진 최신 버전으로 업데이트 필요');
       
       return UpdateCheckResult(
         currentVersion: currentVersion,
@@ -177,82 +204,61 @@ class UpdateService {
       );
     }
     
-    // 현재 버전을 기반으로 다음 버전 추정
-    final parts = currentVersion.split('.');
-    if (parts.length >= 3) {
-      final major = int.tryParse(parts[0]) ?? 2;
-      final minor = int.tryParse(parts[1]) ?? 2;
-      final patch = int.tryParse(parts[2]) ?? 0;
-      
-      // 현재 버전보다 높은 버전 생성
-      String estimatedVersion = '$major.$minor.${patch + 1}';
-      
-      // 최소 버전 보장
-      if (_compareVersions(estimatedVersion, '2.2.9') < 0) {
-        estimatedVersion = '2.2.9';
-      }
-      
-      bool hasUpdateEstimated = _compareVersions(currentVersion, estimatedVersion) < 0;
-      
-      print('🎯 [UPDATE] 추정된 최신 버전: $estimatedVersion');
-      print('🔄 [UPDATE] 업데이트 필요: $hasUpdateEstimated');
-      
-      return UpdateCheckResult(
-        currentVersion: currentVersion,
-        latestVersion: estimatedVersion,
-        hasUpdate: hasUpdateEstimated,
-        releaseInfo: ReleaseInfo(
-          version: estimatedVersion,
-          body: _generateUpdateMessage(estimatedVersion),
-          downloadUrl: _fallbackDownloadUrl,
-        ),
-      );
-    }
-    
-    // 기본 최신 버전 (현재 빌드 기준)
-    const defaultLatestVersion = '2.2.9';
-    bool hasUpdateDefault = _compareVersions(currentVersion, defaultLatestVersion) < 0;
-    
+    print('ℹ️ [DEBUG] 현재 버전이 이미 최신이거나 더 높음');
     return UpdateCheckResult(
       currentVersion: currentVersion,
-      latestVersion: defaultLatestVersion,
-      hasUpdate: hasUpdateDefault,
-      releaseInfo: ReleaseInfo(
-        version: defaultLatestVersion,
-        body: _generateUpdateMessage(defaultLatestVersion),
-        downloadUrl: _fallbackDownloadUrl,
-      ),
+      latestVersion: currentVersion,
+      hasUpdate: false,
+      releaseInfo: null,
     );
   }
 
-  /// 다운로드 URL 찾기 (우선순위: GitHub Assets > 릴리즈 노트 Google Drive > 폴백)
-  static Future<String> _findDownloadUrl(Map<String, dynamic> releaseData) async {
-    // 1. GitHub 릴리즈 에셋에서 APK 찾기
-    if (releaseData['assets'] != null && releaseData['assets'] is List) {
-      final assets = releaseData['assets'] as List;
-      for (var asset in assets) {
-        if (asset['name'].toString().endsWith('.apk')) {
-          print('📦 [UPDATE] GitHub APK 발견: ${asset['name']}');
-          return asset['browser_download_url'];
-        }
+  /// 버전 비교 (v1 < v2이면 음수, v1 = v2이면 0, v1 > v2이면 양수)
+  static int _compareVersions(String version1, String version2) {
+    print('🔍 [DEBUG] 버전 비교 상세 분석:');
+    print('🔍 [DEBUG] version1: "$version1"');
+    print('🔍 [DEBUG] version2: "$version2"');
+    
+    // 버전 문자열 정규화 (v 접두사 제거)
+    final v1Clean = version1.replaceFirst('v', '');
+    final v2Clean = version2.replaceFirst('v', '');
+    
+    print('🔍 [DEBUG] 정규화된 version1: "$v1Clean"');
+    print('🔍 [DEBUG] 정규화된 version2: "$v2Clean"');
+    
+    // 점으로 분할
+    final parts1 = v1Clean.split('.');
+    final parts2 = v2Clean.split('.');
+    
+    print('🔍 [DEBUG] version1 파트: $parts1');
+    print('🔍 [DEBUG] version2 파트: $parts2');
+    
+    // 최대 길이만큼 비교
+    final maxLength = parts1.length > parts2.length ? parts1.length : parts2.length;
+    
+    for (int i = 0; i < maxLength; i++) {
+      final part1 = i < parts1.length ? int.tryParse(parts1[i]) ?? 0 : 0;
+      final part2 = i < parts2.length ? int.tryParse(parts2[i]) ?? 0 : 0;
+      
+      print('🔍 [DEBUG] 파트 $i 비교: $part1 vs $part2');
+      
+      if (part1 < part2) {
+        print('🔍 [DEBUG] 결과: $part1 < $part2, 반환값: -1');
+        return -1;
+      } else if (part1 > part2) {
+        print('🔍 [DEBUG] 결과: $part1 > $part2, 반환값: 1');
+        return 1;
       }
     }
     
-    // 2. 릴리즈 노트에서 Google Drive 링크 찾기
-    final body = releaseData['body'] as String? ?? '';
-    final driveUrlMatch = RegExp(r'https://drive\.google\.com/file/d/[a-zA-Z0-9_-]+/[^\s\)]+').firstMatch(body);
-    if (driveUrlMatch != null) {
-      print('🔗 [UPDATE] Google Drive 링크 발견');
-      return driveUrlMatch.group(0)!;
-    }
-    
-    // 3. 폴백 URL 사용
-    print('🔄 [UPDATE] 폴백 다운로드 URL 사용');
-    return _fallbackDownloadUrl;
+    print('🔍 [DEBUG] 모든 파트가 동일, 반환값: 0');
+    return 0;
   }
 
   /// 업데이트 메시지 생성
   static String _generateUpdateMessage(String version) {
+    print('💬 [DEBUG] 업데이트 메시지 생성: $version');
+    
     if (version == '2.2.9') {
       return '''🧪 **테스트 버전 v$version**
 
@@ -278,25 +284,6 @@ class UpdateService {
 실제 새 기능은 포함되지 않았습니다.''';
     }
     
-    if (version == '2.2.8') {
-      return '''🚀 **메모 앱 업데이트 v$version**
-
-🔧 **업데이트 시스템 개선:**
-- 🤖 **동적 버전 감지 강화** - GitHub 릴리즈 실패 시에도 안정적인 업데이트 감지
-- 📡 **백업 API 시스템** - 다중 경로를 통한 신뢰성 있는 업데이트 확인
-- 🔄 **폴백 다운로드 URL** - 네트워크 문제 시에도 최신 APK 다운로드 보장
-- 📊 **정확한 버전 비교** - 개선된 알고리즘으로 오탐지 방지
-
-🎯 **사용자 경험 개선:**
-- ⚡ **더 빠른 업데이트 감지** - 효율적인 3단계 확인 시스템
-- 📱 **안정적인 업데이트 알림** - 네트워크 상태와 관계없이 일관된 서비스
-- 🔗 **향상된 다운로드 링크** - 최신 버전으로 자동 연결
-- 💬 **상세한 업데이트 정보** - 각 버전별 맞춤 개선사항 안내
-
-⚠️ **주의사항:**
-네트워크 연결을 확인하고 최신 버전을 다운로드하세요.''';
-    }
-    
     return '''🚀 **메모 앱 업데이트 v$version**
 
 ✨ **주요 개선사항:**
@@ -314,53 +301,19 @@ class UpdateService {
 ⚠️ **주의사항:**
 네트워크 연결을 확인하고 최신 버전을 다운로드하세요.''';
   }
-
-  // 버전 비교 함수 (강화된 버전)
-  static int _compareVersions(String v1, String v2) {
-    print('🔍 [VERSION] 버전 비교: "$v1" vs "$v2"');
-    
-    // 버전 문자열 정규화 (v 접두사 제거, 공백 제거)
-    v1 = v1.replaceAll(RegExp(r'[v\s]'), '');
-    v2 = v2.replaceAll(RegExp(r'[v\s]'), '');
-    
-    final v1Parts = v1.split('.');
-    final v2Parts = v2.split('.');
-    
-    // 최대 4개 부분까지 비교 (major.minor.patch.build)
-    final maxLength = 4;
-    
-    for (var i = 0; i < maxLength; i++) {
-      final v1Part = i < v1Parts.length ? (int.tryParse(v1Parts[i]) ?? 0) : 0;
-      final v2Part = i < v2Parts.length ? (int.tryParse(v2Parts[i]) ?? 0) : 0;
-      
-      print('🔢 [VERSION] 부분 $i: $v1Part vs $v2Part');
-      
-      if (v1Part < v2Part) {
-        print('📉 [VERSION] $v1 < $v2');
-        return -1;
-      }
-      if (v1Part > v2Part) {
-        print('📈 [VERSION] $v1 > $v2');
-        return 1;
-      }
-    }
-    
-    print('⚖️ [VERSION] $v1 == $v2');
-    return 0;
-  }
 }
 
 class UpdateCheckResult {
   final String currentVersion;
   final String latestVersion;
   final bool hasUpdate;
-  final ReleaseInfo releaseInfo;
+  final ReleaseInfo? releaseInfo; // Nullable로 변경
 
   UpdateCheckResult({
     required this.currentVersion,
     required this.latestVersion,
     required this.hasUpdate,
-    required this.releaseInfo,
+    this.releaseInfo, // Nullable로 변경
   });
 }
 
