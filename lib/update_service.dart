@@ -16,7 +16,7 @@ class UpdateService {
   /// 폴백 다운로드 URL (GitHub API 실패 시 사용)
   /// 수동으로 업데이트 필요
   static const String _fallbackDownloadUrl = 
-      'https://drive.google.com/file/d/17PY4DxvWndflmMRUcCBzJ6BkX8kpHnJq/view?usp=drivesdk'; // v2.2.12
+      'https://drive.google.com/file/d/1RaeBI5HIXqIXO8ntlJ1f3W5lFyfHFTKF/view?usp=drivesdk'; // v2.2.13
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     print('🚀 [DEBUG] ===== 업데이트 확인 시작 =====');
@@ -289,6 +289,34 @@ class UpdateService {
   /// 업데이트 메시지 생성
   static String _generateUpdateMessage(String version) {
     print('💬 [DEBUG] 업데이트 메시지 생성: $version');
+    
+    if (version == '2.2.13') {
+      return '''🌐 **개발자 정보 개선 v$version**
+
+🎯 **새로운 기능:**
+- ✅ **개발자 홈페이지 추가** - 라이선스 페이지에 http://jiwoosoft.com 링크 추가
+- 🔍 **접근성 향상** - 개발자 정보를 더 쉽게 확인할 수 있도록 개선
+- 📞 **연락 방법 확장** - 홈페이지를 통한 추가적인 개발자 정보 제공
+- 🌟 **투명성 강화** - 앱 개발자에 대한 더 자세한 정보 공개
+
+📱 **확인 방법:**
+1. 앱 설치 후 설정 메뉴 이동
+2. "라이선스" 항목 선택
+3. 개발자 정보 섹션에서 "Website: http://jiwoosoft.com" 확인
+
+🧪 **업데이트 시스템 테스트:**
+- ✅ **v2.2.12 → v2.2.13** 자동 감지 테스트
+- 🤖 **동적 버전 감지** 시스템 실제 검증
+- 🔄 **완전 자동화** 하드코딩 없는 진정한 업데이트 확인
+
+💡 **개발자 정보:**
+- 🌐 **홈페이지**: http://jiwoosoft.com
+- 📧 **이메일**: webmaster@jiwoosoft.com  
+- 📺 **YouTube**: @haneulccm
+- 🐙 **GitHub**: https://github.com/jiwoosoft
+
+🎉 **이제 개발자와 더 쉽게 소통하세요!**''';
+    }
     
     if (version == '2.2.12') {
       return '''🔧 **업데이트 시스템 완전 수정 v$version**
