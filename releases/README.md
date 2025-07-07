@@ -10,7 +10,7 @@
 - **패키지명**: `com.jiwoosoft.secure_memo`
 
 ## 📋 릴리즈 노트
-### v2.2.29 (최신)
+### v2.2.30 (최신)
 - 업데이트 기능 개선
 - 라이트 모드 텍스트 색상 수정
 - 카테고리와 메모 구분 개선
@@ -39,5 +39,6 @@
 - 성능 최적화 
 
 ### 🚀 다운로드 히스토리
-- v2.2.29 (최신) - 2025.07.07 → [다운로드 링크](https://drive.google.com/file/d/1mZYA-ZCZGNb7C9LA501BafKzJ60leL1y/view?usp=drivesdk)
-- v2.2.29 (최신) - 2025.07.07 → [다운로드 링크](https://drive.google.com/file/d/1mZYA-ZCZGNb7C9LA501BafKzJ60leL1y/view?usp=drivesdk)
+- v2.2.30 (최신) - 2025.07.07 → [다운로드 링크](https://drive.google.com/file/d/1gVUpaKeWmGBe3hZMwXZ2x_g9sadLdUic/view?usp=drivesdk)
+- v2.2.30 (최신) - 2025.07.07 → [다운로드 링크](https://drive.google.com/file/d/1gVUpaKeWmGBe3hZMwXZ2x_g9sadLdUic/view?usp=drivesdk)
+- v2.2.30 (최신) - 2025.07.07 → [다운로드 링크](https://drive.google.com/file/d/1gVUpaKeWmGBe3hZMwXZ2x_g9sadLdUic/view?usp=drivesdk)

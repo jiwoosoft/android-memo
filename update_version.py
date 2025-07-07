@@ -5,7 +5,7 @@ Flutter 앱 전체 자동화 스크립트:
  - pubspec.yaml, README.md, CHANGELOG.md 자동 수정
  - Flutter APK 빌드
  - Git 커밋, 태그, 푸시
- - Google Drive에 APK 자동 업로드 (OAuth 방식 사용)
+ - Google Drive에 APK 및 version.json 자동 업로드 (OAuth 방식 사용)
 사용: python update_version.py patch
 """
 
@@ -13,6 +13,7 @@ import re
 import sys
 import subprocess
 import os
+import json
 from datetime import datetime
 from pathlib import Path
 from googleapiclient.discovery import build
@@ -100,6 +101,18 @@ def create_release_entry(version, build, link):
     write_file(changelog, new_content)
 
 
+def create_version_json(version: str, build: int, link: str):
+    data = {
+        "version": version,
+        "build": build,
+        "apk_url": link,
+        "release_date": datetime.now().strftime('%Y-%m-%d'),
+        "description": f"{version} 버전 릴리즈"
+    }
+    with open("version.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
 def run_flutter():
     try:
         subprocess.run(['flutter', 'pub', 'get'], check=True)
@@ -151,7 +164,18 @@ def upload_to_google_drive(apk_path, folder_id, version):
     ).execute()
 
     print(f"✅ Google Drive 업로드 완료 → 링크: {file.get('webViewLink')}")
-    return file.get('webViewLink')
+    return file.get('webViewLink'), service
+
+
+def upload_version_json_to_drive(service, folder_id):
+    file_metadata = {'name': 'version.json', 'parents': [folder_id]}
+    media = MediaFileUpload('version.json', mimetype='application/json')
+    file = service.files().create(
+        body=file_metadata,
+        media_body=media,
+        fields='id, webViewLink'
+    ).execute()
+    print(f"✅ version.json 업로드 완료 → 링크: {file.get('webViewLink')}")
 
 
 def main():
@@ -189,12 +213,15 @@ def main():
     if not os.path.exists(APK_PATH):
         sys.exit(f"❌ APK 파일을 찾을 수 없습니다: {APK_PATH}")
 
-    link = upload_to_google_drive(APK_PATH, GOOGLE_FOLDER_ID, version)
+    link, service = upload_to_google_drive(APK_PATH, GOOGLE_FOLDER_ID, version)
     update_readme_version(version, link)
     print("✅ README.md 버전 정보 업데이트 완료")
 
     create_release_entry(version, build, link)
     print(f"✅ CHANGELOG.md에 v{version} 항목 추가 완료")
+
+    create_version_json(version, build, link)
+    upload_version_json_to_drive(service, GOOGLE_FOLDER_ID)
 
     try:
         git_commit_tag_push(version, update_type)
