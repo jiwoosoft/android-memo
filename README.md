@@ -4,10 +4,10 @@
 
 [📱 APK 다운로드 (Google Drive)](https://drive.google.com/file/d/1zyu9kLyNSSkhEYxuIIbIoOYEvYEWp-2W/view?usp=drivesdk)
 
-### 🚀 최신 버전 (v2.2.17) - 로그인 문제 완전 해결
+### 🚀 최신 버전 (v2.2.27) - 로그인 문제 완전 해결
 - **버전**: v2.2.7+50
 - **크기**: 64.1MB
-- **최종 업데이트**: 2025.07.06
+- **최종 업데이트**: 2025.07.07
 - **주요 변경**: 지문인증 시스템 추가
 
 > 📝 **Google Drive 다운로드 방법**: 링크 클릭 → 우상단 다운로드 버튼 클릭
@@ -480,3 +480,7 @@ MIT 라이선스
 ---
 
 **⭐ 이 프로젝트가 도움이 되었다면 별표를 눌러주세요!**
+
+
+### 🚀 다운로드 히스토리
+- v2.2.27 (최신) - 2025.07.07 → [다운로드 링크](https://drive.google.com/file/d/1IBgUfBPiFU9mWExQSm2r6q32oUZyyfHe/view?usp=drivesdk)
