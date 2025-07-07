@@ -1,4 +1,22 @@
 
+## 📦 v2.2.31 - 2025.07.07
+
+### 🆕 새로운 기능
+-
+
+### 🔧 개선사항
+-
+
+### 🐛 버그 수정
+-
+
+### 📱 기술적 변경사항
+- 빌드 번호: 119
+- 패키지: com.jiwoosoft.secure_memo
+- [다운로드 링크](https://drive.google.com/file/d/1U1CqkEXGfTwQjlpZ3GqPHmIfbHiCOfeT/view?usp=drivesdk)
+
+---
+
 ## 📦 v2.2.30 - 2025.07.07
 
 ### 🆕 새로운 기능

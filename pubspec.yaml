@@ -1,9 +1,9 @@
 name: memo_app
 description: "간단한 메모장"
 
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: 'none' # pub.dev 비공개
 
-version: 2.2.30+118
+version: 2.2.31+119
 
 environment:
   sdk: ^3.8.1
@@ -11,17 +11,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  provider: ^6.1.1  # 상태 관리를 위한 provider 패키지 추가
   cupertino_icons: ^1.0.8
+  provider: ^6.1.1
   shared_preferences: ^2.2.2
   crypto: ^3.0.3
   pinput: ^4.0.0
   expandable: ^5.0.1
   package_info_plus: ^4.2.0
   http: ^1.1.0
-  url_launcher: ^6.2.2
-
-  flutter_secure_storage: ^9.0.0  # 보안 저장소
+  url_launcher: ^6.2.6
+  flutter_secure_storage: ^9.0.0
 
 dev_dependencies:
   flutter_test:
@@ -35,7 +34,7 @@ flutter:
   assets:
     - assets/
 
-# Flutter 런처 아이콘 설정
+# 앱 아이콘 설정
 flutter_launcher_icons:
   android: true
   ios: false
@@ -43,7 +42,7 @@ flutter_launcher_icons:
   min_sdk_android: 21
   background_color: "#ffffff"
   theme_color: "#ffffff"
-  
+
 # 스플래시 화면 설정
 flutter_native_splash:
   color: "#000000"

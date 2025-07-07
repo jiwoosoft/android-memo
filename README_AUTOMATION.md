@@ -40,6 +40,25 @@ python auto_deploy.py major
 python auto_deploy.py --current
 ```
 
+❓버그만 고치고 다시 배포할 땐:
+python update_version.py patch
+
+❓기능을 새로 추가했다면:
+python update_version.py minor
+
+❓앱을 완전히 바꿨다면:
+python update_version.py major
+
+❓코드는 그대로인데 APK만 다시 빌드하고 싶다면:
+python update_version.py build
+
+git add CHANGELOG.md
+git commit -m "📝 vX.Y.Z 릴리즈 노트 내용 작성"
+git push origin main
+
+
+
+
 ## 📋 **실행 과정**
 
 ### 자동 실행 단계
